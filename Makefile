@@ -48,6 +48,10 @@ endef
 
 all: directories $(BIN)
 
+# Create object directory with subdirs from source directory rule
+directories:
+	$(HIDE)$(MKDIR) $(subst $(SEP),$(PSEP),$(OBJ_DIRS))
+
 # Binary Rule
 $(BIN): $(OBJ_FILES)
 	@echo Linking $@
@@ -56,10 +60,6 @@ $(BIN): $(OBJ_FILES)
 
 # C-Files to Object Files Rule
 $(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
-
-# Create object directory with subdirs from source directory rule
-directories:
-	$(HIDE)$(MKDIR) $(subst $(SEP),$(PSEP),$(OBJ_DIRS))
 
 clean:
 ifdef OBJ_DIR
