@@ -5,6 +5,7 @@ CC=clang
 SRC_DIR=src
 HDR_DIR=hdr
 OBJ_DIR=obj
+TEST_DIR=tests
 SRC_DIRS:=$(shell find $(SRC_DIR) -type d -print)
 HDR_DIRS:=$(shell find $(HDR_DIR) -type d -print)
 OBJ_DIRS:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_DIRS))
@@ -36,6 +37,11 @@ MKDIR=mkdir -p
 SEP=/
 PSEP=$(strip $(SEP))
 
+# Utils
+_SET_GREEN := @echo -n "\033[32m" # Green text for "printf"
+_SET_RED := @echo -n "\033[31m" # Red text for "printf"
+_SET_WHITE := @echo -n "\033[0m" # White text for "printf"
+
 # Functions
 define generateRules
 $(1)/%.o: %.c
@@ -44,7 +50,7 @@ $(1)/%.o: %.c
 endef
 
 # Rules
-.PHONY: all clean directories
+.PHONY: all clean directories tests
 
 all: directories $(BIN)
 
@@ -61,13 +67,28 @@ $(BIN): $(OBJ_FILES)
 # C-Files to Object Files Rule
 $(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
 
+clean: $(eval BINARIES:=$(strip $(shell find -maxdepth 1 -type f -executable -name nn* -print)))
+clean: $(eval OBJECTS:=$(shell find -maxdepth 1 -type d -name $(OBJ_DIR) -print))
+clean: $(eval RMOBJ:=rm -r $(OBJECTS))
+clean: $(eval RMBIN:=rm $(BINARIES))
 clean:
-ifdef OBJ_DIR
-	@echo Cleaning object directories
-	$(RMDIR) $(OBJ_DIR)
+ifneq ($(OBJECTS),)
+	@echo "\nmake clean wishes to execute the following command:"
+	$(_SET_RED)
+	@echo "$(RMOBJ)"
+	$(_SET_WHITE)
+	@echo -n "Do you accept? [y/n] " && read ans && [ $${ans:-N} = y ]
+	$(RMOBJ)
 endif
-ifdef BIN
-	@echo Cleaning Binary
-	$(RM) $(BIN)
+ifneq "$(BINARIES)" ""
+	@echo "\nmake clean wishes to execute the following command:"
+	$(_SET_RED)
+	@echo "$(RMBIN)"
+	$(_SET_WHITE)
+	@echo -n "Do you accept? [y/n] " && read ans && [ $${ans:-N} = y ]
+	$(RMBIN)
 endif
-	@echo Cleaning Done.
+	$(_SET_GREEN)
+	@echo "Cleaning Done."
+	$(_SET_WHITE)
+
