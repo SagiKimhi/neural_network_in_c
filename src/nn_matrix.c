@@ -1,7 +1,6 @@
 #ifndef NN_MATRIX_C_
 #define NN_MATRIX_C_
 
-#include "nn_math.h"
 #include <nn_matrix.h>
 
 /* -------------------
@@ -16,7 +15,9 @@ nn_matrix_t nn_matrix_alloc(size_t num_rows, size_t num_cols)
     m.data  = NN_MALLOC(sizeof(*m.data) * num_rows * num_cols);
 
     NN_ASSERT(m.data);
+
     nn_matrix_memset(m, 0);
+
     return m;
 }
 
@@ -111,19 +112,26 @@ extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src)
 void nn_matrix_print(nn_matrix_t m, char *name)
 {
     NN_ASSERT(m.data);
-    NN_ASSERT(name);
 
-    printf("%s = [\n", name);
+    if (name)
+        printf("%s = ", name);
+    
+    printf("{\n");
 
     for (size_t row = 0; row < m.rows; row++) {
+        printf("\t[ ");
+
         for (size_t col = 0; col < m.cols; col++) {
-            printf("%f ", NN_MATRIX_AT(m, row, col));
+            printf(
+                "%f%s ", 
+                NN_MATRIX_AT(m, row, col), (col + 1 < m.cols ? ",": "")
+            );
         }
 
-        printf("\n");
+        printf("]%s\n", (row + 1 < m.rows ? ",": ""));
     }
 
-    printf("]\n");
+    printf("}\n");
 }
 
 

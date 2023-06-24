@@ -25,10 +25,10 @@ extern void nn_ts_free(nn_training_set_t s)
  * ---------------- */
 void nn_ts_print(nn_training_set_t set, char *name)
 {
+    NN_ASSERT(set.data);
     NN_ASSERT(set.cols == NN_TD_ARR_SIZE);
-    NN_ASSERT(set.data != NULL);
 
-    if (name != NULL)
+    if (name)
         printf("%s = ", name);
 
     printf("{\n");
