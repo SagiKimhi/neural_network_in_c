@@ -23,8 +23,10 @@ void run_tests(void)
 
 int main(int arg, char **argv)
 {
+#ifdef NN_TESTS
     srand(time(NULL));
     run_tests();
+#endif /* NN_TESTS */
 
     return 0;
 }

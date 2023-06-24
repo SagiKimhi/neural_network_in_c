@@ -50,9 +50,14 @@ $(1)/%.o: %.c
 endef
 
 # Rules
-.PHONY: all clean directories tests
+.PHONY: tests all clean directories
 
+all: BIN=nn_in_c
 all: directories $(BIN)
+
+tests: BIN=nn_tests
+tests: CFLAGS+= -DNN_TESTS
+tests: directories $(BIN)
 
 # Create object directory with subdirs from source directory rule
 directories:
