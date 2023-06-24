@@ -1,6 +1,7 @@
 #ifndef NN_MATRIX_C_
 #define NN_MATRIX_C_
 
+#include "nn_math.h"
 #include <nn_matrix.h>
 
 /* -------------------
@@ -15,12 +16,13 @@ nn_matrix_t nn_matrix_alloc(size_t num_rows, size_t num_cols)
     m.data  = NN_MALLOC(sizeof(*m.data) * num_rows * num_cols);
 
     NN_ASSERT(m.data);
-    nn_matrix_memset(m, 0);
+    nn_matrix_set(m, 0);
     return m;
 }
 
 void nn_matrix_free(nn_matrix_t m)
 {
+    NN_ASSERT(m.data);
     NN_FREE(m.data);
 }
 
@@ -28,7 +30,7 @@ void nn_matrix_free(nn_matrix_t m)
 /* --------------
  * Value Setters:
  * -------------- */
-void nn_matrix_memset(nn_matrix_t m, float val)
+void nn_matrix_set(nn_matrix_t m, float val)
 {
     NN_ASSERT(m.data);
 
@@ -78,28 +80,51 @@ void nn_matrix_sum(nn_matrix_t dst, nn_matrix_t m)
     NN_ASSERT(m.cols == dst.cols);
     NN_ASSERT(m.data && dst.data);
     
-    for (size_t row = 0; row < dst.rows; row++) {
-        for (size_t col = 0; col < dst.cols; col++) {
+    for (size_t row = 0; row < dst.rows; row++)
+        for (size_t col = 0; col < dst.cols; col++)
             NN_MATRIX_AT(dst, row, col) += NN_MATRIX_AT(m, row, col);
-        }
-    }
 }
 
+extern void nn_matrix_sigmoid(nn_matrix_t m)
+{
+    NN_ASSERT(m.data);
+
+    for (size_t row = 0; row < m.rows; row++)
+        for (size_t col = 0; col < m.cols; col++)
+            NN_MATRIX_AT(m, row, col) = sigmoidf(NN_MATRIX_AT(m, row, col));
+}
 
 /* ----------------
  * Utility Methods:
  * ---------------- */
-void nn_matrix_print(nn_matrix_t m)
+extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src)
+{
+    NN_ASSERT(dst.rows == src.rows);
+    NN_ASSERT(dst.cols == src.cols);
+    NN_ASSERT(dst.data && src.data);
+
+    for (size_t row = 0; row < dst.rows; row++)
+        for (size_t col = 0; col < dst.cols; col++)
+            NN_MATRIX_AT(dst, row, col) = NN_MATRIX_AT(src, row, col);
+}
+
+void nn_matrix_print(nn_matrix_t m, char *name)
 {
     NN_ASSERT(m.data);
+    NN_ASSERT(name);
+
+    printf("%s = [\n", name);
 
     for (size_t row = 0; row < m.rows; row++) {
         for (size_t col = 0; col < m.cols; col++) {
             printf("%f ", NN_MATRIX_AT(m, row, col));
         }
+
         printf("\n");
     }
-    printf("\n");
+
+    printf("]\n");
 }
+
 
 #endif /* NN_MATRIX_C_ */

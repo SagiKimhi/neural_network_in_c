@@ -40,7 +40,7 @@ PSEP=$(strip $(SEP))
 define generateRules
 $(1)/%.o: %.c
 	@echo Building $$@
-	$(HIDE)$(CC) $$(CFLAGS) $$(OFLAGS) $$(INCLUDES) $$(LIBS) $$(subst $$(SEP),$$(PSEP),$$<) -o $$(subst $$(SEP),$$(PSEP),$$@)
+	$(HIDE)$(CC) $$(CFLAGS) $$(OFLAGS) $$(INCLUDES) $$(subst $$(SEP),$$(PSEP),$$<) -o $$(subst $$(SEP),$$(PSEP),$$@)
 endef
 
 # Rules
@@ -55,7 +55,7 @@ directories:
 # Binary Rule
 $(BIN): $(OBJ_FILES)
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(OBJ_FILES) -o $(BIN)
+	$(HIDE)$(CC) $(CFLAGS) $(LIBS) $(OBJ_FILES) -o $(BIN)
 	@echo Done!
 
 # C-Files to Object Files Rule
