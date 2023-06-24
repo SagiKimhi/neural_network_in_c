@@ -16,7 +16,7 @@ nn_matrix_t nn_matrix_alloc(size_t num_rows, size_t num_cols)
     m.data  = NN_MALLOC(sizeof(*m.data) * num_rows * num_cols);
 
     NN_ASSERT(m.data);
-    nn_matrix_set(m, 0);
+    nn_matrix_memset(m, 0);
     return m;
 }
 
@@ -30,7 +30,7 @@ void nn_matrix_free(nn_matrix_t m)
 /* --------------
  * Value Setters:
  * -------------- */
-void nn_matrix_set(nn_matrix_t m, float val)
+void nn_matrix_memset(nn_matrix_t m, float val)
 {
     NN_ASSERT(m.data);
 

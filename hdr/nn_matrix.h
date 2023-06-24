@@ -36,7 +36,7 @@ extern nn_matrix_t nn_matrix_alloc(size_t num_rows, size_t num_cols);
 extern void nn_matrix_free(nn_matrix_t m);
 
 /* Value Setters */
-extern void nn_matrix_set(nn_matrix_t m, float val);
+extern void nn_matrix_memset(nn_matrix_t m, float val);
 extern void nn_matrix_rand(nn_matrix_t m, float low, float high);
 
 /* Mathematic Methods */

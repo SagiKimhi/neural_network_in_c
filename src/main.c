@@ -1,4 +1,5 @@
 #include <nn_matrix.h>
+#include <nn_training_set_tests.h>
 
 void test_nn_matrix_alloc(void)
 {
@@ -32,8 +33,8 @@ void test_nn_matrix_sum(void)
     nn_matrix_t sum = nn_matrix_alloc(10, 10);
 
 
-    nn_matrix_set(a, 1.f);
-    nn_matrix_set(b, 2.f);
+    nn_matrix_memset(a, 1.f);
+    nn_matrix_memset(b, 2.f);
 
     nn_matrix_copy(sum, a);
     nn_matrix_sum(sum, b);
@@ -57,8 +58,8 @@ void test_nn_matrix_dot(void)
     b   = nn_matrix_alloc(3, 4);
     c   = nn_matrix_alloc(2, 4);
 
-    nn_matrix_set(a, 3.f);
-    nn_matrix_set(b, 1.5f);
+    nn_matrix_memset(a, 3.f);
+    nn_matrix_memset(b, 1.5f);
     nn_matrix_dot(c, a, b);
 
     printf("Testing Matrix Dot Function (A * B = C).\n");
@@ -95,6 +96,7 @@ int main(int arg, char **argv)
     test_nn_matrix_sum();
     test_nn_matrix_dot();
     test_nn_matrix_sigmoid();
+    test_nn_ts_alloc_and_macros();
     
     return 0;
 }
