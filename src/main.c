@@ -4,7 +4,7 @@
 
 void run_nn_tests(void)
 {
-    test_nn_print();
+    test_nn_with_xor_model();
 }
 
 void run_matrix_tests(void)
