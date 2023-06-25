@@ -13,6 +13,9 @@ OBJ_DIRS:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_DIRS))
 # Files
 SRC_FILES=$(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.c))
 OBJ_FILES:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_FILES:.c=.o))
+
+# Binaries
+XOR_BIN=xor_nn
 BIN=nn_in_c
 
 # Gnu-Make Variables
@@ -25,7 +28,7 @@ else
 endif
 
 # Flags
-CFLAGS=-ansi -pedantic -std=c99 -Wall
+CFLAGS=-Wall -O0
 OFLAGS=-c
 LIBS=-lm
 INCLUDES:=$(foreach dir, $(HDR_DIRS), $(addprefix -I,$(dir)))
@@ -50,7 +53,7 @@ $(1)/%.o: %.c
 endef
 
 # Rules
-.PHONY: tests all clean directories
+.PHONY: tests all clean directories xor
 
 all: BIN=nn_in_c
 all: directories $(BIN)
@@ -59,6 +62,8 @@ tests: BIN=nn_tests
 tests: CFLAGS+= -DNN_TESTS
 tests: directories $(BIN)
 
+xor: directories $(XOR_BIN)
+
 # Create object directory with subdirs from source directory rule
 directories:
 	$(HIDE)$(MKDIR) $(subst $(SEP),$(PSEP),$(OBJ_DIRS))
@@ -66,13 +71,18 @@ directories:
 # Binary Rule
 $(BIN): $(OBJ_FILES)
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(LIBS) $(OBJ_FILES) -o $(BIN)
+	$(HIDE)$(CC) $(CFLAGS) $(OBJ_FILES) -o $(BIN) $(LIBS)
 	@echo Done!
+
+$(XOR_BIN): $(filter-out obj/main.o, $(OBJ_FILES)) example_models/nn_xor.c
+	@echo Linking $@
+	$(HIDE)$(CC) $(CFLAGS) $(filter-out obj/main.o, $(OBJ_FILES)) $(INCLUDES) example_models/nn_xor.c -o $(XOR_BIN) $(LIBS)
+	@echo Done.
 
 # C-Files to Object Files Rule
 $(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
 
-clean: $(eval BINARIES:=$(strip $(shell find -maxdepth 1 -type f -executable -name nn* -print)))
+clean: $(eval BINARIES:=$(strip $(shell find -maxdepth 1 -type f -executable -print)))
 clean: $(eval OBJECTS:=$(shell find -maxdepth 1 -type d -name $(OBJ_DIR) -print))
 clean: $(eval RMOBJ:=rm -r $(OBJECTS))
 clean: $(eval RMBIN:=rm $(BINARIES))

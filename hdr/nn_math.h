@@ -11,6 +11,8 @@
 /* ----------------------
  * Function Declarations:
  * ---------------------- */  
+
 extern float sigmoidf(float x);
+
 
 #endif /* NN_MATH_H_ */
