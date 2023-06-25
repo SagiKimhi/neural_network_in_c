@@ -1,5 +1,11 @@
 #include <nn_matrix_tests.h>
 #include <nn_training_set_tests.h>
+#include <nn_tests.h>
+
+void run_nn_tests(void)
+{
+    test_nn_print();
+}
 
 void run_matrix_tests(void)
 {
@@ -15,16 +21,26 @@ void run_training_set_tests(void)
     test_nn_ts_alloc_and_macros();
 }
 
-void run_tests(void)
+void run_framework_tests(void)
 {
     run_matrix_tests();
     run_training_set_tests();
 }
 
+void run_tests(void)
+{
+    run_nn_tests();
+}
+
 int main(int arg, char **argv)
 {
-#ifdef NN_TESTS
     srand(time(NULL));
+
+#ifdef NN_FW_TESTS
+    run_framework_tests();
+#endif /* NN_FW_TESTS */
+
+#ifdef NN_TESTS
     run_tests();
 #endif /* NN_TESTS */
 
