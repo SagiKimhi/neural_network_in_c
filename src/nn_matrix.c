@@ -129,17 +129,17 @@ nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row)
     };
 }
 
-void nn_matrix_print(nn_matrix_t m, char *name)
+void nn_matrix_print(nn_matrix_t m, char *name, int indent)
 {
     NN_ASSERT(m.data);
 
     if (name)
-        printf("%s = ", name);
+        printf("%*s%s = ", indent, "", name);
     
     printf("{\n");
 
     for (size_t row = 0; row < m.rows; row++) {
-        printf("\t[ ");
+        printf("%*s\t[ ", indent, "");
 
         for (size_t col = 0; col < m.cols; col++) {
             printf(
@@ -151,7 +151,7 @@ void nn_matrix_print(nn_matrix_t m, char *name)
         printf("]%s\n", (row + 1 < m.rows ? ",": ""));
     }
 
-    printf("}\n");
+    printf("%*s}\n", indent, "");
 }
 
 

@@ -14,7 +14,7 @@
 #define NN_MATRIX_AT(m, row, col)\
     (m).data[(row) * (m).stride + (col)]
 
-#define NN_MATRIX_PRINT(m) nn_matrix_print(m, #m)
+#define NN_MATRIX_PRINT(m) nn_matrix_print(m, #m, 0)
 
 
 /* ---------
@@ -48,7 +48,7 @@ extern void nn_matrix_sigmoid(nn_matrix_t m);
 /* Utility Methods */
 extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src);
 extern nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row);
-extern void nn_matrix_print(nn_matrix_t m, char *name);
+extern void nn_matrix_print(nn_matrix_t m, char *name, int indent);
 
 
 #endif /*NN_MATRIX_H_*/

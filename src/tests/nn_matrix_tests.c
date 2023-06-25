@@ -20,9 +20,9 @@ void test_nn_matrix_rand(void)
 
 
     printf("Testing Matrix Rand Function (Low = -10 High = 25):\n");
-    nn_matrix_print(m, "m_before_rand");
+    nn_matrix_print(m, "m_before_rand", 0);
     nn_matrix_rand(m, -10, 25);
-    nn_matrix_print(m, "m_after_rand");
+    nn_matrix_print(m, "m_after_rand", 0);
     printf(" ------------------------------------------------ \n");
 
     nn_matrix_free(m);
@@ -81,9 +81,9 @@ void test_nn_matrix_sigmoid(void)
     
     printf("Testing Matrix Sigmoid Function.\n");
     nn_matrix_rand(m, -15, 25);
-    nn_matrix_print(m, "m_before_sigmoid");
+    nn_matrix_print(m, "m_before_sigmoid", 0);
     nn_matrix_sigmoid(m);
-    nn_matrix_print(m, "m_after_sigmoid");
+    nn_matrix_print(m, "m_after_sigmoid", 0);
     printf(" ------------------------------------------------ \n");
 
     nn_matrix_free(m);
