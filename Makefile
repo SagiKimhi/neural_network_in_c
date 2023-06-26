@@ -15,7 +15,8 @@ SRC_FILES=$(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.c))
 OBJ_FILES:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_FILES:.c=.o))
 
 # Binaries
-XOR_BIN=xor_nn
+ADDER_BIN=example_models/nn_adder
+XOR_BIN=example_models/nn_xor
 BIN=nn_in_c
 
 # Gnu-Make Variables
@@ -83,6 +84,7 @@ $(XOR_BIN): $(filter-out obj/main.o, $(OBJ_FILES)) example_models/nn_xor.c
 $(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
 
 clean: $(eval BINARIES:=$(strip $(shell find -maxdepth 1 -type f -executable -print)))
+clean: $(eval BINARIES+=$(strip $(shell find ./example_models/ -maxdepth 1 -type f -executable -print)))
 clean: $(eval OBJECTS:=$(shell find -maxdepth 1 -type d -name $(OBJ_DIR) -print))
 clean: $(eval RMOBJ:=rm -r $(OBJECTS))
 clean: $(eval RMBIN:=rm $(BINARIES))
