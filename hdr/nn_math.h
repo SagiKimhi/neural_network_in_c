@@ -13,6 +13,9 @@
  * ---------------------- */  
 
 extern float sigmoidf(float x);
+extern float dsigmoidf(float y);
+extern float actf(float x, nn_act_func_enum actf);
+extern float dactf(float y, nn_act_func_enum actf);
 
 
 #endif /* NN_MATH_H_ */

@@ -1,6 +1,7 @@
 #ifndef NN_MATRIX_C_
 #define NN_MATRIX_C_
 
+#include "nn_defines.h"
 #include <nn_matrix.h>
 
 /* -------------------
@@ -94,7 +95,7 @@ void nn_matrix_sum(nn_matrix_t dst, nn_matrix_t m)
     }
 }
 
-extern void nn_matrix_sigmoid(nn_matrix_t m)
+void nn_matrix_sigmoid(nn_matrix_t m)
 {
     NN_ASSERT(m.data);
 
@@ -105,10 +106,20 @@ extern void nn_matrix_sigmoid(nn_matrix_t m)
     }
 }
 
+void nn_matrix_actf(nn_matrix_t m, nn_act_func_enum act_func)
+{
+    NN_ASSERT(m.data);
+
+    for (size_t row = 0; row < m.rows; row++)
+        for (size_t col = 0; col < m.cols; col++)
+            NN_MATRIX_AT(m, row, col) = 
+                actf(NN_MATRIX_AT(m, row, col), act_func);
+}
+
 /* ----------------
  * Utility Methods:
  * ---------------- */
-extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src)
+void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src)
 {
     NN_ASSERT(dst.rows == src.rows);
     NN_ASSERT(dst.cols == src.cols);

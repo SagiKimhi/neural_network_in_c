@@ -1,6 +1,7 @@
 #include "nn.h"
 #include "nn_matrix.h"
 #include <nn_tests.h>
+#include <stdio.h>
 
 #define STRINGIFY(s) #s
 
@@ -42,12 +43,6 @@ void test_nn_forward(void)
         .stride = stride,
         .data   = td,
     };
-    nn_matrix_t t_out = {
-        .rows   = n,
-        .cols   = 1,
-        .stride = stride,
-        .data   = &td[2],
-    };
     nn_t        nn = nn_alloc(arch, NN_SIZEOF_ARR(arch));
 
     nn_rand(nn, 0, 10);
@@ -84,28 +79,44 @@ void test_nn_with_xor_model(void)
 
     /* NN Model init */
     size_t xor_arch[] = {2, 2, 1};
-    float eps = 1e-1;
-    float rate = 1e-1;
+    float rate = 1;
     nn_t nn_xor = nn_alloc(xor_arch, NN_SIZEOF_ARR(xor_arch));
     nn_t nn_grad = nn_alloc(xor_arch, NN_SIZEOF_ARR(xor_arch));
 
     nn_rand(nn_xor, 0, 1);
-    NN_MATRIX_PRINT(ts_in);
-    NN_MATRIX_PRINT(ts_out);
-    NN_PRINT(nn_xor);
-    NN_PRINT(nn_grad);
     
-    printf("cost before training: %f\n", nn_cost(nn_xor, ts_in, ts_out));
+    printf("\n\nTeaching My AI Model how to XOR :O \n\n");
+    printf("-------------------------------------------------------\n\n");
+    printf("Cost function value before training: %f\n", nn_cost(nn_xor, ts_in, ts_out));
+    printf("Model results before training:\n");
+    for (size_t i = 0; i < 2; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            NN_MATRIX_AT(NN_INPUT(nn_xor), 0, 0) = i;
+            NN_MATRIX_AT(NN_INPUT(nn_xor), 0, 1) = j;
+            nn_forward(nn_xor);
+            printf("%zu ^ %zu = %f\n", i, j, *NN_OUTPUT(nn_xor).data);
+        }
+    }
+    printf("-------------------------------------------------------\n\n");
+    printf("Press enter to start the training process...\n");
+    char buf[2];
+    fgets(buf, 2, stdin);
 
-    for (size_t i = 0; i < 50 * 1000; i++) {
-        nn_finite_difference(nn_xor, nn_grad, eps, ts_in, ts_out);
+    for (size_t i = 0; i < 10 * 1000; i++) {
+#if 0
+        nn_finite_difference(nn_xor, nn_grad, 1e-1, ts_in, ts_out);
+#else
+        nn_back_propagation(nn_xor, nn_grad, ts_in, ts_out);
+#endif
         nn_learn(nn_xor, nn_grad, rate);
-        printf("%zu: cost = %f\n", i, nn_cost(nn_xor, ts_in, ts_out));
+        if (!(i%100))
+            printf("%zu: cost = %f\n", i, nn_cost(nn_xor, ts_in, ts_out));
     }
 
-    printf("Final Cost = %f\n", nn_cost(nn_xor, ts_in, ts_out));
     printf("-------------------------------------------------------\n\n");
 
+    printf("Final Cost = %f\n", nn_cost(nn_xor, ts_in, ts_out));
+    printf("Model results after training:\n");
     for (size_t i = 0; i < 2; i++) {
         for (size_t j = 0; j < 2; j++) {
             NN_MATRIX_AT(NN_INPUT(nn_xor), 0, 0) = i;

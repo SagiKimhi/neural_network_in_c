@@ -1,8 +1,6 @@
 #ifndef NN_C_
 #define NN_C_
 
-#include "nn_defines.h"
-#include "nn_matrix.h"
 #include <nn.h>
 
 
@@ -72,6 +70,18 @@ void nn_rand(nn_t nn, float low, float high)
     }
 }
 
+void nn_memset(nn_t nn, float val)
+{
+    for (size_t i = 0; i < nn.nof_layers; i++) {
+        nn_matrix_memset(nn.weights[i], val);
+        nn_matrix_memset(nn.biases[i], val);
+        nn_matrix_memset(nn.activations[i], val);
+    }
+
+    nn_matrix_memset(NN_OUTPUT(nn), val);
+}
+
+
 /* -----------
  * NN Methods:
  * ----------- */
@@ -95,6 +105,84 @@ void nn_learn(nn_t nn, nn_t grad, float rate)
                 );
             }
         }
+    }
+}
+
+void nn_back_propagation(
+    nn_t nn, nn_t grad, 
+    nn_matrix_t ts_in, nn_matrix_t ts_out
+)
+{
+    size_t n_samples;
+
+    NN_ASSERT(ts_in.rows == ts_out.rows);
+    NN_ASSERT(ts_out.cols == NN_OUTPUT(nn).cols);
+
+    nn_memset(grad, 0);
+    n_samples = ts_in.rows;
+
+#ifdef NN_BACKPROP_TRADITIONAL
+    float out_multiplier = 2;
+    float pd_multiplier = 1;
+#else
+    float out_multiplier = 1;
+    float pd_multiplier = 2;
+#endif /* NN_BACKPROP_TRADITIONAL */
+
+    for (size_t sample = 0; sample < n_samples; sample++) {
+        nn_matrix_copy(NN_INPUT(nn), nn_matrix_row(ts_in, sample));
+        nn_forward(nn);
+
+        for (size_t l = 0; l <= nn.nof_layers; l++) {
+            nn_matrix_memset(grad.activations[l], 0);
+        }
+
+        for (size_t out_idx = 0; out_idx < ts_out.cols; out_idx++) {
+            NN_MATRIX_AT(NN_OUTPUT(grad), 0, out_idx) = (
+                out_multiplier * (
+                    NN_MATRIX_AT(NN_OUTPUT(nn), 0, out_idx) - 
+                    NN_MATRIX_AT(ts_out, sample, out_idx)
+                )
+            );
+        }
+
+        for (size_t l = nn.nof_layers; l > 0; l--) {
+            /* 
+             * j = weight/bias matrix column
+             * k = weight matrix row
+             * */
+            for (size_t j = 0; j < nn.activations[l].cols; j++) {
+                float a = NN_MATRIX_AT(nn.activations[l], 0, j);
+                float cost_a = NN_MATRIX_AT(grad.activations[l], 0, j);
+                float deriv_a = dactf(a, NN_ACT_FUNC);
+
+                NN_MATRIX_AT(grad.biases[l-1], 0, j) += (
+                    pd_multiplier * cost_a * deriv_a
+                );
+
+                for (size_t k = 0; k < nn.activations[l-1].cols; k++) {
+                    float prev_a = NN_MATRIX_AT(nn.activations[l-1], 0, k);
+                    float aw = NN_MATRIX_AT(nn.weights[l-1], k, j);
+
+                    NN_MATRIX_AT(grad.weights[l-1], k, j) += (
+                        pd_multiplier * cost_a * deriv_a * prev_a
+                    );
+                    NN_MATRIX_AT(grad.activations[l-1], 0, k) += (
+                        pd_multiplier * cost_a * deriv_a * aw
+                    );
+                }
+            }
+        }
+    }
+
+    for (size_t l = 0; l < grad.nof_layers; l++) {
+        for (size_t col = 0; col < grad.weights[l].cols; col++)
+            for (size_t row = 0; row < grad.weights[l].rows; row++)
+                NN_MATRIX_AT(grad.weights[l], row, col) /= n_samples;
+
+        for (size_t col = 0; col < grad.biases[l].cols; col++)
+            for (size_t row = 0; row < grad.biases[l].rows; row++)
+                NN_MATRIX_AT(grad.biases[l], row, col) /= n_samples;
     }
 }
 
@@ -178,7 +266,7 @@ void nn_forward(nn_t nn)
     for (size_t i = 0; i < nn.nof_layers; i++) {
         nn_matrix_dot(nn.activations[i+1], nn.activations[i], nn.weights[i]);
         nn_matrix_sum(nn.activations[i+1], nn.biases[i]);
-        nn_matrix_sigmoid(nn.activations[i+1]);
+        nn_matrix_actf(nn.activations[i+1], NN_ACT_FUNC);
     }
 }
 

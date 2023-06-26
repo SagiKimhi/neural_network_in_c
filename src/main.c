@@ -34,7 +34,7 @@ void run_tests(void)
 
 int main(int arg, char **argv)
 {
-    srand(time(NULL));
+    srand(69);
 
 #ifdef NN_FW_TESTS
     run_framework_tests();

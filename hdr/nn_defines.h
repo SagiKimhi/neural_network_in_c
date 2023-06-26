@@ -18,4 +18,13 @@
 #endif /*NN_ASSERT*/
 
 
+/* ---------
+ * Typedefs:
+ * --------- */
+typedef enum {
+    ACT_SIGMOID,
+} nn_act_func_enum;
+
+
+
 #endif /* NN_DEFINES_H_ */

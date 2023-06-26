@@ -16,11 +16,14 @@
 #define NN_OUTPUT(nn)       ( (nn).activations[(nn).nof_layers] )
 #define NN_SIZEOF_ARR(arr)  ( sizeof((arr)) / sizeof((arr)[0]) )
 
+#ifndef NN_ACT_FUNC
+    #define NN_ACT_FUNC ACT_SIGMOID
+#endif
+
 
 /* ---------
  * Typedefs:
  * --------- */
-
 typedef struct {
     size_t      nof_layers;
     nn_matrix_t *weights;
@@ -39,15 +42,21 @@ extern void nn_free(nn_t nn);
 
 /* Value Setters: */
 extern void nn_rand(nn_t nn, float low, float high);
+extern void nn_memset(nn_t nn, float val);
 
 /* NN Methods: */
 extern void nn_learn(nn_t nn, nn_t grad, float rate);
+extern void nn_back_propagation(
+    nn_t nn, nn_t grad, 
+    nn_matrix_t ts_in, nn_matrix_t ts_out
+);
 extern void nn_finite_difference(
     nn_t nn, nn_t grad, float eps,
     nn_matrix_t ts_in, nn_matrix_t ts_out
 );
 extern float nn_cost(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 extern void nn_forward(nn_t nn);
+
 
 /* Util Methods */
 extern void nn_print(nn_t nn, char *name);

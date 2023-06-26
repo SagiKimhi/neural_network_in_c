@@ -44,6 +44,7 @@ extern void nn_matrix_rand(nn_matrix_t m, float low, float high);
 extern void nn_matrix_dot(nn_matrix_t dst, nn_matrix_t a, nn_matrix_t b);
 extern void nn_matrix_sum(nn_matrix_t dst, nn_matrix_t m);
 extern void nn_matrix_sigmoid(nn_matrix_t m);
+extern void nn_matrix_actf(nn_matrix_t m, nn_act_func_enum act_func);
 
 /* Utility Methods */
 extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src);
