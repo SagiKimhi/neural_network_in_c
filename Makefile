@@ -15,9 +15,10 @@ SRC_FILES=$(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.c))
 OBJ_FILES:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_FILES:.c=.o))
 
 # Binaries
-ADDER_BIN=example_models/nn_adder
-XOR_BIN=example_models/nn_xor
-BIN=nn_in_c
+SO=libnn.so
+ADDER_BIN=nn_adder
+XOR_BIN=nn_xor
+TEST_BIN=nn_tests
 
 # Gnu-Make Variables
 VPATH:=$(SRC_DIRS)
@@ -29,7 +30,7 @@ else
 endif
 
 # Flags
-CFLAGS=-Wall -O0
+CFLAGS=-Wall -fPIC -O3
 OFLAGS=-c
 LIBS=-lm
 INCLUDES:=$(foreach dir, $(HDR_DIRS), $(addprefix -I,$(dir)))
@@ -54,31 +55,46 @@ $(1)/%.o: %.c
 endef
 
 # Rules
-.PHONY: tests all clean directories xor
+.PHONY: all clean directories tests examples xor adder slib
 
-all: BIN=nn_in_c
-all: directories $(BIN)
+all: directories $(OBJ_FILES) examples tests
 
-tests: BIN=nn_tests
 tests: CFLAGS+= -DNN_TESTS
-tests: directories $(BIN)
+tests: directories $(TEST_BIN)
+
+examples: xor adder
 
 xor: directories $(XOR_BIN)
+
+adder: directories $(ADDER_BIN)
+
+slib: $(SO)
 
 # Create object directory with subdirs from source directory rule
 directories:
 	$(HIDE)$(MKDIR) $(subst $(SEP),$(PSEP),$(OBJ_DIRS))
 
-# Binary Rule
-$(BIN): $(OBJ_FILES)
+# Binary Rules
+$(TEST_BIN): $(OBJ_FILES) example_models/run_tests.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(OBJ_FILES) -o $(BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/run_tests.c -o $(TEST_BIN) $(LIBS)
 	@echo Done!
 
-$(XOR_BIN): $(filter-out obj/main.o, $(OBJ_FILES)) example_models/nn_xor.c
+$(XOR_BIN): $(OBJ_FILES) example_models/nn_xor.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(filter-out obj/main.o, $(OBJ_FILES)) $(INCLUDES) example_models/nn_xor.c -o $(XOR_BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/nn_xor.c -o $(XOR_BIN) $(LIBS)
 	@echo Done.
+
+$(ADDER_BIN): $(OBJ_FILES) example_models/nn_adder.c
+	@echo Linking $@
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/nn_adder.c -o $(ADDER_BIN) $(LIBS)
+	@echo Done.
+
+# Shared Library Rule
+$(SO): $(OBJ_FILES)
+	@echo Linking $@
+	$(HIDE)$(CC) $(CFLAGS) -shared $(OBJ_FILES) -o $(SO)
+	@echo Done!
 
 # C-Files to Object Files Rule
 $(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
@@ -97,7 +113,7 @@ ifneq ($(OBJECTS),)
 	@echo -n "Do you accept? [y/n] " && read ans && [ $${ans:-N} = y ]
 	$(RMOBJ)
 endif
-ifneq "$(BINARIES)" ""
+ifneq ($(BINARIES),)
 	@echo "\nmake clean wishes to execute the following command:"
 	$(_SET_RED)
 	@echo "$(RMBIN)"

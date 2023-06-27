@@ -1,5 +1,3 @@
-#include "nn.h"
-#include "nn_matrix.h"
 #include <nn_tests.h>
 #include <stdio.h>
 
