@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <float.h>
+#include <limits.h>
 #include <time.h>
 #include <nn_defines.h>
 

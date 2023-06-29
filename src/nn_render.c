@@ -1,30 +1,96 @@
 #ifndef NN_RENDER_C_
 #define NN_RENDER_C_
 
+#include "raylib.h"
 #include <nn_render.h>
+
+#define NN_RENDER_GET_COST_GRAPH_POS_Y(y, cost, min, max, vspace)\
+    ( (y) + ( 1 - ((cost) - (min)) / ((max) - (min)) ) * (vspace) )
+
+#define NN_RENDER_GET_COST_GRAPH_POS_X(x, i, n, hspace)\
+    ( (x) + (hspace) / (n) * (i) )
+
 
 /* ----------
  * Constants:
  * ---------- */
-const float frame_hpad_multiplier       = 0.02f;
-const float frame_vpad_multiplier       = 0.02f;
-const float default_obj_vpad_multiplier = 0.1f;
-const float default_obj_hpad_multiplier = 0.1f;
-const float default_line_thickness_multiplier = 1.4f;
-const float default_nn_frame_thickness = 2.f;
+const float frame_hpad_multiplier                       = 0.003f;
+const float frame_vpad_multiplier                       = 0.005f;
+const float default_obj_vpad_multiplier                 = 0.1f;
+const float default_obj_hpad_multiplier                 = 0.1f;
+const float default_line_thickness_multiplier           = 1.4f;
+const float default_nn_main_frame_thickness             = 2.f;
+const float default_nn_graph_frame_thickness            = 1.5f;
+const float default_nn_network_frame_thickness          = 1.5f;
+const float default_nn_graph_frame_h_multiplier         = 0.95f;
+const float default_nn_graph_frame_w_multiplier         = 0.42f;
+const float default_nn_network_frame_h_multiplier       = 0.5f;
+const float default_nn_network_frame_w_multiplier       = 0.57f;
 
 /* ----------------------
  * Static Function Decls:
  * ---------------------- */
-static int find_max_nof_neuron_circles(nn_t nn);
+static int nn_render_find_max_nof_neuron_circles(nn_t nn);
+static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max, float *min);
 
 
 /* -------------------------------
  * Library Method Implementations:
  * ------------------------------- */
-void nn_render(nn_t nn, Rectangle nn_frame)
+void nn_render_with_default_frames(nn_t nn, nn_render_cost_info cost_info, float rate)
 {
-    DrawRectangleLinesEx(nn_frame, default_nn_frame_thickness, GRAY);
+    char buf[256];
+
+    Rectangle   main_frame      = {
+        .x = 0, 
+        .y = 0, 
+        .width = GetRenderWidth(), 
+        .height = GetRenderHeight(),
+    };
+    Rectangle   network_frame   = {
+        .width  = main_frame.width * default_nn_network_frame_w_multiplier,
+        .height = main_frame.height * default_nn_network_frame_h_multiplier,
+        .x      = (
+            main_frame.width - get_frame_hpad(main_frame) - 
+            main_frame.width * default_nn_network_frame_w_multiplier
+        ),
+        .y      = (
+            main_frame.height - get_frame_vpad(main_frame) - 
+            main_frame.height * default_nn_network_frame_h_multiplier
+        ) 
+    };
+    Rectangle   graph_frame     = {
+        .width  = main_frame.width * default_nn_graph_frame_w_multiplier,
+        .height = main_frame.height * default_nn_graph_frame_h_multiplier,
+        .x      = get_frame_hpad(main_frame),
+        .y      = (
+            main_frame.height - get_frame_vpad(main_frame) - 
+            main_frame.height * default_nn_graph_frame_h_multiplier
+        ),
+    };
+    
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawRectangleLinesEx(network_frame, default_nn_network_frame_thickness, GRAY);
+    DrawRectangleLinesEx(graph_frame, default_nn_graph_frame_thickness, GRAY);
+    nn_render_network(nn, network_frame);
+    nn_render_cost_graph(graph_frame, cost_info);
+    nn_render_model_information_text(main_frame, cost_info, rate, buf);
+    EndDrawing();
+}
+
+void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_info, float rate, char buf[256])
+{
+    if (!cost_info.count)
+        return;
+
+
+    snprintf(buf, 255, "Rate: %f, Iteration: %zu, Cost: %f", rate, cost_info.count, cost_info.items[cost_info.count-1]);
+    DrawText(buf, get_frame_hpad(frame)*3, get_frame_vpad(frame)*3, 20, RAYWHITE);
+}
+
+void nn_render_network(nn_t nn, Rectangle nn_frame)
+{
 
     for (size_t l = 0; l <= nn.nof_layers; l++) {
         nn_render_neuron_layer_circles(nn, l, nn_frame);
@@ -35,8 +101,76 @@ void nn_render(nn_t nn, Rectangle nn_frame)
 void nn_render_your_mom(nn_t nn, Rectangle frame)
 {
     
-    nn_render(nn, frame);
+    nn_render_network(nn, frame);
     DrawText("<3 Your Mom <3", GetRenderWidth()/4, 20, 80, PINK);
+}
+
+void nn_render_cost_graph(Rectangle frame, nn_render_cost_info cost)
+{
+    const size_t min_count_to_render = 1000;
+
+    size_t  n;
+    float   max, min;
+    float   frame_hspace, frame_vspace, frame_hpad, frame_vpad;
+    Vector2 start_pos, end_pos;
+
+    NN_ASSERT(cost.items);
+    NN_ASSERT(cost.count <= cost.capacity);
+    
+    if (cost.count <= 1)
+        return;
+
+    frame_hspace    = get_frame_hspace(frame);
+    frame_vspace    = get_frame_vspace(frame);
+    frame_hpad      = get_frame_hpad(frame);
+    frame_vpad      = get_frame_vpad(frame);
+    n = (
+        cost.count > min_count_to_render ? 
+        cost.count : min_count_to_render 
+    );
+    nn_render_find_max_min_costs(cost, &max, &min);
+
+    for (size_t i = 0; i + 1 < cost.count; i++) {
+        start_pos.x = NN_RENDER_GET_COST_GRAPH_POS_X(
+            frame.x+frame_hpad, i, n, frame_hspace
+        );
+        start_pos.y = NN_RENDER_GET_COST_GRAPH_POS_Y(
+            frame.y+frame_vpad, cost.items[i], min, max, frame_vspace
+        );
+        end_pos.x   = NN_RENDER_GET_COST_GRAPH_POS_X(
+            frame.x+frame_hpad, i + 1, n, frame_hspace
+        );
+        end_pos.y   = NN_RENDER_GET_COST_GRAPH_POS_Y(
+            frame.y+frame_vpad, cost.items[i + 1], min, max, frame_vspace
+        );
+
+        DrawLineEx(start_pos, end_pos, 1, RED);
+    }
+
+    nn_render_x_y_axis_internal(frame);
+}
+
+void nn_render_x_y_axis_internal(Rectangle frame)
+{
+    Vector2 start_pos, end_pos;
+    float   frame_hpad, frame_vpad, frame_hspace, frame_vspace;
+
+    frame_hspace    = get_frame_hspace(frame);
+    frame_vspace    = get_frame_vspace(frame);
+    frame_hpad      = get_frame_hpad(frame);
+    frame_vpad      = get_frame_vpad(frame);
+
+    start_pos.x = frame.x + frame_hpad;
+    start_pos.y = frame.y + frame_vpad + frame_vspace;
+    end_pos.x   = frame.x + frame_hpad + frame_hspace;
+    end_pos.y   = start_pos.y;
+    DrawLineEx(start_pos, end_pos, 1, WHITE);
+
+    start_pos.x = frame.x + frame_hpad;
+    start_pos.y = frame.y + frame_vpad;
+    end_pos.x   = start_pos.x;
+    end_pos.y   = frame.y + frame_vpad + frame_vspace;
+    DrawLineEx(start_pos, end_pos, 1, WHITE);
 }
 
 void nn_render_neuron_layer_connections(nn_t nn, size_t layer, Rectangle frame)
@@ -103,7 +237,7 @@ void nn_render_neuron_layer_circles(nn_t nn, size_t layer, Rectangle frame)
 float calc_neuron_circle_radius(nn_t nn, Rectangle frame)
 {
     float   circ_hspace             = get_relative_object_hspace(frame, nn.nof_layers + 1);
-    float   circ_vspace             = get_relative_object_vspace(frame, find_max_nof_neuron_circles(nn));
+    float   circ_vspace             = get_relative_object_vspace(frame, nn_render_find_max_nof_neuron_circles(nn));
     float   circ_vpad               = get_object_vpad(circ_vspace);
     float   circ_hpad               = get_object_hpad(circ_hspace);
 
@@ -192,7 +326,7 @@ float get_object_hpad(float relative_object_hspace)
 /* ----------------------
  * Static Function Impls:
  * ---------------------- */
-static int find_max_nof_neuron_circles(nn_t nn)
+static int nn_render_find_max_nof_neuron_circles(nn_t nn)
 {
     int max = (
         NN_INPUT(nn).cols > NN_OUTPUT(nn).cols ? 
@@ -207,5 +341,17 @@ static int find_max_nof_neuron_circles(nn_t nn)
     return max;
 }
 
+static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max, float *min)
+{
+    *max = FLT_MIN;
+    *min = FLT_MAX;
+
+    for (size_t i = 0; i < c_info.count; i++) {
+        if (c_info.items[i] > *max) *max = c_info.items[i];
+        if (c_info.items[i] < *min) *min = c_info.items[i];
+    }
+
+    if (*min > 0) * min = 0;
+}
 
 #endif /* NN_RENDER_C_ */
