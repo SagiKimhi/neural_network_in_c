@@ -1,4 +1,3 @@
-#include <raylib.h>
 #include <nn_render.h>
 
 #define BITS    (4)
@@ -17,7 +16,6 @@ int main(int argc, char **argv)
     const int       default_window_height   = 800;
     const int       default_target_fps      = 60;
     const char      default_window_title[]  = "nn_visualization";
-    const float     nn_rec_thickness        = 4.f;
     const float     border_hpad_mult        = 0.02;
     const float     border_vpad_mult        = 0.02;
 

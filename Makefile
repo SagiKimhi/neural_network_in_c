@@ -9,9 +9,12 @@ TEST_DIR=tests
 SRC_DIRS:=$(shell find $(SRC_DIR) -type d -print)
 HDR_DIRS:=$(shell find $(HDR_DIR) -type d -print)
 OBJ_DIRS:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_DIRS))
+GUI_OBJ_DIRS:=$(OBJ_DIR)
 
 # Files
-SRC_FILES=$(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.c))
+GUI_SRC_FILES=$(SRC_DIR)/nn_render.c
+GUI_OBJ_FILES:=$(subst $(SRC_DIR), $(OBJ_DIR), $(GUI_SRC_FILES:.c=.o))
+SRC_FILES:=$(foreach dir, $(SRC_DIRS), $(filter-out $(GUI_SRC_FILES), $(wildcard $(dir)/*.c)))
 OBJ_FILES:=$(subst $(SRC_DIR), $(OBJ_DIR), $(SRC_FILES:.c=.o))
 
 # Binaries
@@ -31,12 +34,15 @@ else
 endif
 
 # Flags
-INCLUDES:=$(foreach dir, $(HDR_DIRS), $(addprefix -I,$(dir)))
-INCLUDES+=-I$(HOME)/project/libs/raylib/include
-PLIBRARIES=-L$(HOME)/project/libs/raylib/lib
 CFLAGS=-Wall -fPIC -O3
 OFLAGS=-c
-LIBS=-lm -lraylib
+LIBS=-lm
+INCLUDES:=$(foreach dir, $(HDR_DIRS), $(addprefix -I,$(dir)))
+
+GUI_INCLUDE_PATH = -I$(HOME)/project/libs/raylib/include
+GUI_INCLUDES:=$(GUI_INCLUDE_PATH) $(INCLUDES) 
+GUI_LIB_FLAG = -L$(HOME)/project/libs/raylib/lib
+GUI_LIBS:=$(LIBS) -lraylib
 
 # Commands
 RM=rm
@@ -51,16 +57,16 @@ _SET_RED := @echo -n "\033[31m" # Red text for "printf"
 _SET_WHITE := @echo -n "\033[0m" # White text for "printf"
 
 # Functions
-define generateRules
+define generateObjRules
 $(1)/%.o: %.c
-	@echo Building $$@
+	@echo genObjRules: Building $$@
 	$(HIDE)$(CC) $$(CFLAGS) $$(OFLAGS) $$(INCLUDES) $$(subst $$(SEP),$$(PSEP),$$<) -o $$(subst $$(SEP),$$(PSEP),$$@)
 endef
 
 # Rules
-.PHONY: all clean directories tests examples xor adder slib nn_gui
+.PHONY: all clean directories tests examples xor adder slib gui
 
-all: directories $(OBJ_FILES) examples tests
+all: directories $(OBJ_FILES) examples tests gui
 
 tests: CFLAGS+= -DNN_TESTS
 tests: directories $(TEST_BIN)
@@ -95,9 +101,9 @@ $(ADDER_BIN): $(OBJ_FILES) example_models/nn_adder.c
 	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/nn_adder.c -o $(ADDER_BIN) $(LIBS)
 	@echo Done.
 
-$(NN_GUI_BIN): $(OBJ_FILES) example_models/nn_gui.c
+$(NN_GUI_BIN): $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_gui.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(PLIBRARIES) $(OBJ_FILES) example_models/nn_gui.c -o $(NN_GUI_BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(GUI_LIB_FLAG) $(GUI_INCLUDES) $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_gui.c -o $(NN_GUI_BIN) $(GUI_LIBS)
 	@echo Done.
 
 # Shared Library Rule
@@ -107,7 +113,12 @@ $(SO): $(OBJ_FILES)
 	@echo Done!
 
 # C-Files to Object Files Rule
-$(foreach dir, $(OBJ_DIRS), $(eval $(call generateRules, $(dir))))
+$(GUI_OBJ_FILES): $(GUI_SRC_FILES)
+	@echo Building $@
+	$(CC) $(CFLAGS) $(OFLAGS) $(GUI_INCLUDES) $^ -o $@
+
+$(foreach dir, $(OBJ_DIRS), $(eval $(call generateObjRules, $(dir))))
+
 
 clean: $(eval BINARIES:=$(strip $(shell find -maxdepth 1 -type f -executable -print)))
 clean: $(eval BINARIES+=$(strip $(shell find ./example_models/ -maxdepth 1 -type f -executable -print)))
