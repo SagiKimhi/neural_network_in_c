@@ -5,10 +5,6 @@
 #define MAX_N   (1 << BITS)
 
 /* General Window Constants */
-const int       default_window_width    = 1200;
-const int       default_window_height   = 800;
-const int       default_target_fps      = 60;
-const char      default_window_title[]  = "nn_visualization";
 
 void init_ts_values(nn_matrix_t ts_in, nn_matrix_t ts_out);
 void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
@@ -17,9 +13,8 @@ int main(int argc, char **argv)
 {
     srand(time(0));
 
-    size_t      arch[]      = { 2 * BITS, 4 * BITS, 2 * BITS, BITS + 1};
+    size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, BITS + 1};
     size_t      arch_len    = NN_SIZEOF_ARR(arch);
-    float       rate        = 1;
     nn_t        nn          = nn_alloc(arch, arch_len);
     nn_t        gradient    = nn_alloc(arch, arch_len);
     nn_matrix_t ts          = nn_matrix_alloc(MAX_N * MAX_N, BITS * 3 + 1);
@@ -35,65 +30,12 @@ int main(int argc, char **argv)
         .stride = ts.stride,
         .data   = (ts.data + ts_in.cols),
     };
-    nn_render_cost_info cost_info = {
-        .items = NN_MALLOC(sizeof(float) * COST_INFO_INIT_CAP),
-        .capacity = COST_INFO_INIT_CAP,
-        .count = 0,
-    };
-    int key = 0;
-    int stop_flag = 0;
-    int restart_flag = 0;
 
-    NN_ASSERT(cost_info.items);
-
-    nn_rand(nn, 0, 1);
     init_ts_values(ts_in, ts_out);
-
-    cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
-
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(default_window_width, default_window_height, default_window_title);
-    SetTargetFPS(default_target_fps);
-
-    while (!WindowShouldClose()) {
-        nn_render_with_default_frames(nn, cost_info, rate);
-
-        if (!stop_flag) {
-            nn_back_propagation(nn, gradient, ts_in, ts_out);
-            nn_learn(nn, gradient, rate);
-            cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
-        }
-
-        if (restart_flag) {
-            cost_info.count = 0;
-            nn_rand(nn, 0, 1);
-            cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
-            restart_flag = 0;
-        }
-
-
-        while ( (key = GetKeyPressed()) ) {
-            if (key == KEY_S)
-                stop_flag = !stop_flag;
-            else if (key == KEY_R)
-                stop_flag = restart_flag = 1;
-            else if (key == KEY_DOWN)
-                rate -= 1e-1;
-            else if (key == KEY_UP)
-                rate += 1e-1;
-            else if (key == KEY_P) {
-                stop_flag = 1;
-                print_model_results(nn, ts_in, ts_out);
-            }
-        }
-    }
-
-    CloseWindow();
-    
+    nn_render_with_default_frames(nn, gradient, ts_in, ts_out, 0, 1, &print_model_results);
 
     nn_free(nn);
     nn_free(gradient);
-    free(cost_info.items);
 
     return 0;
 }

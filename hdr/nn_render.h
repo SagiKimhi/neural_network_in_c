@@ -60,6 +60,8 @@ typedef struct {
     size_t  capacity;
 } nn_render_cost_info;
 
+typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
+
 extern float get_frame_vpad(Rectangle frame);
 extern float get_frame_hpad(Rectangle frame);
 extern float get_frame_vspace(Rectangle frame);
@@ -77,6 +79,9 @@ extern void nn_render_neuron_layer_circles(nn_t nn, size_t layer, Rectangle fram
 extern void nn_render_neuron_layer_connections(nn_t nn, size_t layer, Rectangle frame);
 extern void nn_render_your_mom(nn_t nn, Rectangle nn_frame);
 extern void nn_render_network(nn_t nn, Rectangle nn_frame);
-extern void nn_render_with_default_frames(nn_t nn, nn_render_cost_info cost_info, float rate);
+extern void nn_render_with_default_frames(
+    nn_t nn, nn_t gradient, nn_matrix_t ts_in, nn_matrix_t ts_out,
+    float rand_low, float rand_high, nn_print_func_t optional_print_func_ptr
+);
 
 #endif /* NN_RENDER_H_ */

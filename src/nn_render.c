@@ -14,6 +14,10 @@
 /* ----------
  * Constants:
  * ---------- */
+const int   default_window_width                        = 1200;
+const int   default_window_height                       = 800;
+const int   default_target_fps                          = 60;
+const char  default_window_title[]                      = "nn_gui_deeznuts";
 const float frame_hpad_multiplier                       = 0.003f;
 const float frame_vpad_multiplier                       = 0.005f;
 const float default_obj_vpad_multiplier                 = 0.1f;
@@ -32,51 +36,108 @@ const float default_nn_network_frame_w_multiplier       = 0.57f;
  * ---------------------- */
 static int nn_render_find_max_nof_neuron_circles(nn_t nn);
 static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max, float *min);
+static void nn_render_update_frames_internal_(
+    Rectangle *main_frame, Rectangle *network_frame, Rectangle *graph_frame
+);
 
 
 /* -------------------------------
  * Library Method Implementations:
  * ------------------------------- */
-void nn_render_with_default_frames(nn_t nn, nn_render_cost_info cost_info, float rate)
+void nn_render_with_default_frames(
+    nn_t nn, nn_t gradient, nn_matrix_t ts_in, nn_matrix_t ts_out,
+    float rand_low, float rand_high, nn_print_func_t optional_print_func_ptr
+)
 {
     char buf[256];
 
-    Rectangle   main_frame      = {
-        .x = 0, 
-        .y = 0, 
-        .width = GetRenderWidth(), 
-        .height = GetRenderHeight(),
+    int     i                   = 0;
+    int     key                 = 0;
+    int     stop_flag           = 0;
+    int     auto_stop_triggered = 0;
+    int     restart_flag        = 0;
+    float   nn_rate             = 5e-1;
+    Rectangle main_frame, network_frame, graph_frame;
+
+    nn_render_cost_info cost_info = {
+        .items = NN_MALLOC(sizeof(float) * COST_INFO_INIT_CAP),
+        .capacity = COST_INFO_INIT_CAP,
+        .count = 0,
     };
-    Rectangle   network_frame   = {
-        .width  = main_frame.width * default_nn_network_frame_w_multiplier,
-        .height = main_frame.height * default_nn_network_frame_h_multiplier,
-        .x      = (
-            main_frame.width - get_frame_hpad(main_frame) - 
-            main_frame.width * default_nn_network_frame_w_multiplier
-        ),
-        .y      = (
-            main_frame.height - get_frame_vpad(main_frame) - 
-            main_frame.height * default_nn_network_frame_h_multiplier
-        ) 
-    };
-    Rectangle   graph_frame     = {
-        .width  = main_frame.width * default_nn_graph_frame_w_multiplier,
-        .height = main_frame.height * default_nn_graph_frame_h_multiplier,
-        .x      = get_frame_hpad(main_frame),
-        .y      = (
-            main_frame.height - get_frame_vpad(main_frame) - 
-            main_frame.height * default_nn_graph_frame_h_multiplier
-        ),
-    };
-    
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawRectangleLinesEx(network_frame, default_nn_network_frame_thickness, GRAY);
-    DrawRectangleLinesEx(graph_frame, default_nn_graph_frame_thickness, GRAY);
-    nn_render_network(nn, network_frame);
-    nn_render_cost_graph(graph_frame, cost_info);
-    nn_render_model_information_text(main_frame, cost_info, rate, buf);
-    EndDrawing();
+
+    nn_rand(nn, rand_low, rand_high);
+    NN_ASSERT(cost_info.items);
+    cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
+
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(default_window_width, default_window_height, default_window_title);
+    SetTargetFPS(default_target_fps);
+
+
+    do {
+        if (!(i++ % 0x40) && IsWindowReady()) {
+            BeginDrawing();
+            nn_render_update_frames_internal_(&main_frame, &network_frame, &graph_frame);
+            DrawRectangleLinesEx(network_frame, default_nn_network_frame_thickness, GRAY);
+            DrawRectangleLinesEx(graph_frame, default_nn_graph_frame_thickness, GRAY);
+            ClearBackground(BLACK);
+            nn_render_network(nn, network_frame);
+            nn_render_cost_graph(graph_frame, cost_info);
+            nn_render_model_information_text(main_frame, cost_info, nn_rate, buf);
+            EndDrawing();
+        }
+
+        while ( (key = GetKeyPressed()) ) {
+            switch (key) {
+                case KEY_S:
+                    stop_flag = !stop_flag;
+                    break;
+
+                case KEY_R:
+                    restart_flag = 1;
+                    break;
+
+                case KEY_DOWN:
+                    nn_rate -= 1e-1;
+                    break;
+
+                case KEY_UP:
+                    nn_rate += 1e-1;
+                    break;
+
+                case KEY_P:
+                    if (optional_print_func_ptr)
+                        optional_print_func_ptr(nn, ts_in, ts_out);
+            }
+
+            key = 0;
+        }
+
+        if (restart_flag) {
+            cost_info.count = 0;
+            nn_rand(nn, rand_low, rand_high);
+            cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
+            restart_flag = 0;
+            i = 0;
+            continue;
+        }
+
+        if (stop_flag)
+            continue;
+
+        nn_back_propagation(nn, gradient, ts_in, ts_out);
+        nn_learn(nn, gradient, nn_rate);
+        cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
+
+        if (!auto_stop_triggered && cost_info.items[cost_info.count-1] <= 5e-4) {
+            stop_flag = 1;
+            auto_stop_triggered = 1;
+        }
+
+
+    } while (!WindowShouldClose());
+    CloseWindow();
+    free(cost_info.items);
 }
 
 void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_info, float rate, char buf[256])
@@ -353,5 +414,42 @@ static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max,
 
     if (*min > 0) * min = 0;
 }
+
+static void nn_render_update_frames_internal_(
+    Rectangle *main_frame, Rectangle *network_frame, Rectangle *graph_frame
+)
+{
+    *main_frame = (Rectangle) {
+        .x = 0, 
+        .y = 0, 
+        .width = GetRenderWidth(), 
+        .height = GetRenderHeight(),
+    };
+
+    *network_frame = (Rectangle) {
+        .width  = main_frame->width * default_nn_network_frame_w_multiplier,
+        .height = main_frame->height * default_nn_network_frame_h_multiplier,
+        .x      = (
+            main_frame->width - get_frame_hpad(*main_frame) - 
+            main_frame->width * default_nn_network_frame_w_multiplier
+        ),
+        .y      = (
+            main_frame->height - get_frame_vpad(*main_frame) - 
+            main_frame->height * default_nn_network_frame_h_multiplier
+        ) 
+    };
+
+    *graph_frame = (Rectangle) {
+        .width  = main_frame->width * default_nn_graph_frame_w_multiplier,
+        .height = main_frame->height * default_nn_graph_frame_h_multiplier,
+        .x      = get_frame_hpad(*main_frame),
+        .y      = (
+            main_frame->height - get_frame_vpad(*main_frame) - 
+            main_frame->height * default_nn_graph_frame_h_multiplier
+        ),
+    };
+
+}
+
 
 #endif /* NN_RENDER_C_ */
