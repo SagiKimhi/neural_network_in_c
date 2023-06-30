@@ -1,5 +1,4 @@
 #include <nn_matrix_tests.h>
-#include <nn_training_set_tests.h>
 #include <nn_tests.h>
 
 void run_nn_tests(void)
@@ -16,15 +15,9 @@ void run_matrix_tests(void)
     test_nn_matrix_sigmoid();
 }
 
-void run_training_set_tests(void)
-{
-    test_nn_ts_alloc_and_macros();
-}
-
 void run_framework_tests(void)
 {
     run_matrix_tests();
-    run_training_set_tests();
 }
 
 void run_tests(void)
