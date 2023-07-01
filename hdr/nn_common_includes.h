@@ -3,10 +3,12 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <float.h>
 #include <limits.h>
 #include <time.h>
+#include <ctype.h>
 #include <nn_defines.h>
 
 #endif /* NN_COMMON_INCLUDES_H_ */

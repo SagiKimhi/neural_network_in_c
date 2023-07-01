@@ -22,7 +22,8 @@ SO=libnn.so
 ADDER_BIN=nn_adder
 XOR_BIN=nn_xor
 TEST_BIN=nn_tests
-NN_GUI_BIN=nn_gui
+ADDER_GUI_BIN=nn_adder_gui
+REVERSE_SSH_GUI_BIN=nn_reverse_ssh_gui
 
 # Gnu-Make Variables
 VPATH:=$(SRC_DIRS)
@@ -64,9 +65,9 @@ $(1)/%.o: %.c
 endef
 
 # Rules
-.PHONY: all clean directories tests examples xor adder slib gui
+.PHONY: all clean directories tests examples xor adder slib adder_gui rev_ssh_gui
 
-all: directories $(OBJ_FILES) examples tests gui
+all: directories $(OBJ_FILES) examples tests adder_gui rev_ssh_gui slib
 
 tests: CFLAGS+= -DNN_TESTS
 tests: directories $(TEST_BIN)
@@ -77,9 +78,11 @@ xor: directories $(XOR_BIN)
 
 adder: directories $(ADDER_BIN)
 
-gui: directories $(NN_GUI_BIN)
+adder_gui: directories $(ADDER_GUI_BIN)
 
-slib: $(SO)
+rev_ssh_gui: directories $(REVERSE_SSH_GUI_BIN)
+
+slib: directories $(SO)
 
 # Create object directory with subdirs from source directory rule
 directories:
@@ -88,28 +91,33 @@ directories:
 # Binary Rules
 $(TEST_BIN): $(OBJ_FILES) example_models/run_tests.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/run_tests.c -o $(TEST_BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LIBS)
 	@echo Done!
 
 $(XOR_BIN): $(OBJ_FILES) example_models/nn_xor.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/nn_xor.c -o $(XOR_BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LIBS)
 	@echo Done.
 
 $(ADDER_BIN): $(OBJ_FILES) example_models/nn_adder.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_FILES) example_models/nn_adder.c -o $(ADDER_BIN) $(LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LIBS)
 	@echo Done.
 
-$(NN_GUI_BIN): $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_gui.c
+$(ADDER_GUI_BIN): $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_adder_gui.c
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) $(GUI_LIB_FLAG) $(GUI_INCLUDES) $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_gui.c -o $(NN_GUI_BIN) $(GUI_LIBS)
+	$(HIDE)$(CC) $(CFLAGS) $(GUI_LIB_FLAG) $(GUI_INCLUDES) $^ -o $@ $(GUI_LIBS)
+	@echo Done.
+
+$(REVERSE_SSH_GUI_BIN): $(OBJ_FILES) $(GUI_OBJ_FILES) example_models/nn_reverse_ssh.c
+	@echo Linking $@
+	$(HIDE)$(CC) $(CFLAGS) $(GUI_LIB_FLAG) $(GUI_INCLUDES) $^ -o $@ $(GUI_LIBS)
 	@echo Done.
 
 # Shared Library Rule
 $(SO): $(OBJ_FILES)
 	@echo Linking $@
-	$(HIDE)$(CC) $(CFLAGS) -shared $(OBJ_FILES) -o $(SO)
+	$(HIDE)$(CC) $(CFLAGS) -shared $^ -o $@
 	@echo Done!
 
 # C-Files to Object Files Rule

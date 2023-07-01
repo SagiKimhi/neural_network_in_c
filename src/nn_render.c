@@ -30,6 +30,7 @@ const float default_nn_graph_frame_h_multiplier         = 0.95f;
 const float default_nn_graph_frame_w_multiplier         = 0.42f;
 const float default_nn_network_frame_h_multiplier       = 0.5f;
 const float default_nn_network_frame_w_multiplier       = 0.57f;
+const float default_nn_learning_rate                    = 1;
 
 /* ----------------------
  * Static Function Decls:
@@ -45,26 +46,33 @@ static void nn_render_update_frames_internal_(
  * Library Method Implementations:
  * ------------------------------- */
 void nn_render_with_default_frames(
-    nn_t nn, nn_t gradient, nn_matrix_t ts_in, nn_matrix_t ts_out,
-    float rand_low, float rand_high, nn_print_func_t optional_print_func_ptr
+    nn_arch_t arch, float rand_low, float rand_high, 
+    nn_print_func_t optional_print_func_ptr, nn_load_data_func_t load_data
 )
 {
     char buf[256];
 
-    int     i                   = 0;
-    int     key                 = 0;
-    int     stop_flag           = 0;
-    int     auto_stop_triggered = 0;
-    int     restart_flag        = 0;
-    float   nn_rate             = 5e-1;
-    Rectangle main_frame, network_frame, graph_frame;
+    int         i                   = 0;
+    int         key                 = 0;
+    int         stop_flag           = 0;
+    int         auto_stop_triggered = 0;
+    int         restart_flag        = 0;
+    float       nn_rate             = default_nn_learning_rate;
+    nn_t        nn, gradient;
+    nn_matrix_t ts_in, ts_out;
+    Rectangle   main_frame, network_frame, graph_frame;
 
     nn_render_cost_info cost_info = {
         .items = NN_MALLOC(sizeof(float) * COST_INFO_INIT_CAP),
         .capacity = COST_INFO_INIT_CAP,
         .count = 0,
     };
-
+    
+    ts_in.data  = NULL;
+    ts_out.data = NULL;
+    load_data("", &ts_in, &ts_out, 1);
+    nn          = nn_alloc(arch.arch, arch.arch_len);
+    gradient    = nn_alloc(arch.arch, arch.arch_len);
     nn_rand(nn, rand_low, rand_high);
     NN_ASSERT(cost_info.items);
     cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
@@ -87,6 +95,17 @@ void nn_render_with_default_frames(
             EndDrawing();
         }
 
+        if (IsKeyDown(KEY_DOWN)) {
+            nn_rate -= 1e-3;
+            WaitTime(0.0000001);
+        }
+        
+        if (IsKeyDown(KEY_UP)) {
+            nn_rate += 1e-3;
+            WaitTime(0.0000001);
+        }
+        
+
         while ( (key = GetKeyPressed()) ) {
             switch (key) {
                 case KEY_S:
@@ -108,6 +127,29 @@ void nn_render_with_default_frames(
                 case KEY_P:
                     if (optional_print_func_ptr)
                         optional_print_func_ptr(nn, ts_in, ts_out);
+                    break;
+
+                case KEY_M:
+                    printf("\n\n----------------------------------\n\n");
+                    printf("ts_in.rows: %zu\n", ts_in.rows);
+                    printf("ts_in.cols: %zu\n", ts_in.cols);
+                    NN_MATRIX_PRINT(ts_in);
+                    printf("ts_out.rows: %zu\n", ts_out.rows);
+                    printf("ts_out.cols: %zu\n", ts_out.cols);
+                    NN_MATRIX_PRINT(ts_out);
+                    printf("\n\n----------------------------------\n\n");
+                    break;
+
+                case KEY_L:
+                    nn_matrix_free(ts_out);
+                    nn_matrix_free(ts_in);
+                    ts_out.data = NULL;
+                    ts_in.data = NULL;
+                    load_data("", &ts_in, &ts_out, 1);
+                    NN_ASSERT(ts_in.data && ts_out.data);
+                    stop_flag = 1;
+                    i = 0;
+                    break;
             }
 
             key = 0;
@@ -118,6 +160,7 @@ void nn_render_with_default_frames(
             nn_rand(nn, rand_low, rand_high);
             cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
             restart_flag = 0;
+            nn_rate = default_nn_learning_rate;
             i = 0;
             continue;
         }
@@ -146,7 +189,7 @@ void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_
         return;
 
 
-    snprintf(buf, 255, "Rate: %f, Iteration: %zu, Cost: %f", rate, cost_info.count, cost_info.items[cost_info.count-1]);
+    snprintf(buf, 255, "Rate: %2.8f, Iteration: %zu, Cost: %.16f", rate, cost_info.count, cost_info.items[cost_info.count-1]);
     DrawText(buf, get_frame_hpad(frame)*3, get_frame_vpad(frame)*3, 20, RAYWHITE);
 }
 
