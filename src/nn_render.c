@@ -47,7 +47,8 @@ static void nn_render_update_frames_internal_(
  * ------------------------------- */
 void nn_render_with_default_frames(
     nn_arch_t arch, float rand_low, float rand_high, 
-    nn_print_func_t optional_print_func_ptr, nn_load_data_func_t load_data
+    NN_LOAD_DATA_FUNC_T load_data, 
+    NN_PRINT_RESULTS_FUNC_T optional_print_func_ptr
 )
 {
     char buf[256];
@@ -70,7 +71,7 @@ void nn_render_with_default_frames(
     
     ts_in.data  = NULL;
     ts_out.data = NULL;
-    load_data("", &ts_in, &ts_out, 1);
+    load_data(NN_LOAD_DATA_FUNC_ARGS);
     nn          = nn_alloc(arch.arch, arch.arch_len);
     gradient    = nn_alloc(arch.arch, arch.arch_len);
     nn_rand(nn, rand_low, rand_high);
@@ -126,7 +127,7 @@ void nn_render_with_default_frames(
 
                 case KEY_P:
                     if (optional_print_func_ptr)
-                        optional_print_func_ptr(nn, ts_in, ts_out);
+                        optional_print_func_ptr(NN_PRINT_RESULTS_FUNC_ARGS);
                     break;
 
                 case KEY_M:
@@ -145,7 +146,7 @@ void nn_render_with_default_frames(
                     nn_matrix_free(ts_in);
                     ts_out.data = NULL;
                     ts_in.data = NULL;
-                    load_data("", &ts_in, &ts_out, 1);
+                    load_data(NN_LOAD_DATA_FUNC_ARGS);
                     NN_ASSERT(ts_in.data && ts_out.data);
                     stop_flag = 1;
                     i = 0;

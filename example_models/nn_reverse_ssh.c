@@ -1,8 +1,13 @@
 //#define NN_BACKPROP_TRADITIONAL
+#include <nn.h>
+typedef void nn_load_data_func_t(char *data_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out, size_t range);
+#define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
+#define NN_LOAD_DATA_FUNC_ARGS "", &ts_in, &ts_out, 1
+
+
 /* ---------
  * Includes:
  * --------- */
-#include "nn.h"
 #include <nn_render.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -69,47 +74,10 @@ int main(int argc, char **argv)
     if (ts_in.data == NULL || ts_out.data == NULL)
         return EXIT_FAILURE;
 
-    char    buf[BUFSIZ] = {0};
     size_t  arch[]              = {ts_in.cols, 23, 23, 23, 23, 23, 23, ts_out.cols};
     size_t  arch_len            = NN_SIZEOF_ARR(arch);
-    nn_t    nn                  = nn_alloc(arch, arch_len);
-    nn_t    grad                = nn_alloc(arch, arch_len);
-    float   rate = 1;
 
-#if 1
-    nn_render_with_default_frames((nn_arch_t){arch_len, arch}, -1.2f, 1.2f, &print_results, &load_training_data);
-#else
-    nn_rand(nn, -1, 1);
-
-    printf("Initial Cost = %f\n", nn_cost(nn, ts_in, ts_out));
-
-    for (size_t i = 0; i < 1000 * 1000; i++) {
-        nn_back_propagation(nn, grad, ts_in, ts_out);
-        nn_learn(nn, grad, rate);
-        if (!(i%0x80)) {
-            float cost = nn_cost(nn, ts_in, ts_out);
-
-            if (cost < 1e-12)
-                break;
-
-            printf("%10zu: Cost = %4.30f\n", i, cost);
-        }
-    }
-
-    printf("Final Cost = %f\n", nn_cost(nn, ts_in, ts_out));
-    printf("-----------------------------------------\n\n");
-    
-    for (size_t i = 0; i <NN_OUTPUT(nn).cols; i++) {
-        buf[i] = (char)(NN_MATRIX_AT(NN_OUTPUT(nn), 0, i) * CHAR_MAX);
-    }
-
-    buf[NN_OUTPUT(nn).cols] = 0;
-    printf("output: %s\n", buf);
-#endif
-    nn_free(nn);
-    nn_free(grad);
-    nn_matrix_free(ts_in);
-    nn_matrix_free(ts_out);
+    nn_render_with_default_frames((nn_arch_t){arch_len, arch}, -1.2f, 1.2f, &load_training_data, &print_results);
     
     return EXIT_SUCCESS;
 }

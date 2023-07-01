@@ -6,7 +6,7 @@
 
 /* General Window Constants */
 
-void init_ts_values(nn_matrix_t ts_in, nn_matrix_t ts_out);
+void init_ts_values(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
 void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
 int main(int argc, char **argv)
@@ -15,38 +15,25 @@ int main(int argc, char **argv)
 
     size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, BITS + 1};
     size_t      arch_len    = NN_SIZEOF_ARR(arch);
-    nn_t        nn          = nn_alloc(arch, arch_len);
-    nn_t        gradient    = nn_alloc(arch, arch_len);
-    nn_matrix_t ts          = nn_matrix_alloc(MAX_N * MAX_N, BITS * 3 + 1);
-    nn_matrix_t ts_in       = {
-        .cols   = 2 * BITS,
-        .rows   = ts.rows,
-        .stride = ts.stride,
-        .data   = ts.data,
-    };
-    nn_matrix_t ts_out      = {
-        .cols   = BITS + 1,
-        .rows   = ts.rows,
-        .stride = ts.stride,
-        .data   = (ts.data + ts_in.cols),
-    };
 
-    init_ts_values(ts_in, ts_out);
-    nn_render_with_default_frames(nn, gradient, ts_in, ts_out, 0, 1, &print_model_results);
-
-    nn_free(nn);
-    nn_free(gradient);
+    nn_render_with_default_frames(
+        (nn_arch_t){.arch = arch, .arch_len = arch_len}, 0, 1, 
+        &init_ts_values, &print_model_results
+    );
 
     return 0;
 }
 
 
-void init_ts_values(nn_matrix_t ts_in, nn_matrix_t ts_out)
+void init_ts_values(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
 {
     size_t n_samples = MAX_N * MAX_N;
 
-    NN_ASSERT(ts_in.rows == n_samples);
-    NN_ASSERT(ts_out.rows == n_samples);
+    if (!ts_in->data)
+        *ts_in = nn_matrix_alloc(n_samples, 2 * BITS);
+
+    if (!ts_out->data)
+        *ts_out = nn_matrix_alloc(n_samples, BITS + 1);
 
     for (size_t n = 0; n < n_samples; n++) {
         size_t x = n / MAX_N;
@@ -54,15 +41,15 @@ void init_ts_values(nn_matrix_t ts_in, nn_matrix_t ts_out)
         size_t z = x + y;
 
         for (size_t col = 0; col < BITS; col++) {
-            NN_MATRIX_AT(ts_in, n, col)         = ( (x >> (BITS -1 - col) ) & 1);
-            NN_MATRIX_AT(ts_in, n, BITS + col)  = ( (y >> (BITS -1 - col) ) & 1);
-            NN_MATRIX_AT(ts_out, n, col)        = ( 
+            NN_MATRIX_AT(*ts_in, n, col)         = ( (x >> (BITS -1 - col) ) & 1);
+            NN_MATRIX_AT(*ts_in, n, BITS + col)  = ( (y >> (BITS -1 - col) ) & 1);
+            NN_MATRIX_AT(*ts_out, n, col)        = ( 
                 z < MAX_N ? ( (z >> (BITS - 1 - col) ) & 1 ): 0
             );
         }
 
         if (z >= MAX_N)
-            NN_MATRIX_AT(ts_out, n, ts_out.cols-1) = 1;
+            NN_MATRIX_AT(*ts_out, n, ts_out->cols-1) = 1;
     }
 }
 

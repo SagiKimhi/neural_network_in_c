@@ -65,8 +65,24 @@ typedef struct {
     size_t *arch;
 } nn_arch_t;
 
-typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
-typedef void nn_load_data_func_t(char *data_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out, size_t range);
+#ifndef NN_PRINT_RESULTS_FUNC_T
+    typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
+    #define NN_PRINT_RESULTS_FUNC_T nn_print_func_t
+    #define NN_PRINT_RESULTS_FUNC_ARGS nn, ts_in, ts_out
+#elif !defined NN_PRINT_RESULTS_FUNC_ARGS
+#error "Please define NN_PRINT_RESULTS_ARGS for passing arguments"\
+        "to a user defined nn_print_func_t function"
+#endif /* NN_PRING_RESULTS_FUNC_T */
+
+
+#ifndef NN_LOAD_DATA_FUNC_T
+    typedef void nn_load_data_func_t(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+    #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
+    #define NN_LOAD_DATA_FUNC_ARGS &ts_in, &ts_out
+#elif !defined NN_LOAD_DATA_FUNC_ARGS
+#error "Please define NN_LOAD_DATA_FUNC_ARGS for passing arguments"\
+        "to user defined function of type nn_load_data_func_t"
+#endif /* NN_LOAD_DATA_FUNC_T */
 
 extern float get_frame_vpad(Rectangle frame);
 extern float get_frame_hpad(Rectangle frame);
@@ -87,7 +103,8 @@ extern void nn_render_your_mom(nn_t nn, Rectangle nn_frame);
 extern void nn_render_network(nn_t nn, Rectangle nn_frame);
 extern void nn_render_with_default_frames(
     nn_arch_t arch, float rand_low, float rand_high, 
-    nn_print_func_t optional_print_func_ptr, nn_load_data_func_t load_data
+    NN_LOAD_DATA_FUNC_T load_data, 
+    NN_PRINT_RESULTS_FUNC_T optional_print_func_ptr
 );
 
 #endif /* NN_RENDER_H_ */
