@@ -1,3 +1,4 @@
+#include "nn.h"
 #include <nn_tests.h>
 #include <nn_io.h>
 
@@ -50,6 +51,46 @@ void test_nn_forward(void)
     NN_MATRIX_PRINT(NN_OUTPUT(nn));
 
     nn_free(nn);
+}
+
+void test_nn_save_and_load(void)
+{
+    FILE    *fp;
+    size_t  arch[]      = {16, 8, 8, 4, 4};
+    size_t  arch_len    = NN_SIZEOF_ARR(arch);
+    nn_t    nn          = nn_alloc(arch, arch_len);
+
+
+    nn_rand(nn, -1, 1);
+    nn_print(nn, "nn before save");
+
+    fp = nn_io_fopen(
+        "/home/kali/project/git_repos/public/neural_network_in_c/example_models/"\
+        "test_nn_save_and_load_model",
+        ".nn", "wb"
+    );
+
+    NN_ASSERT(fp);
+    nn_save_model(fp, nn);
+    nn_free(nn);
+    fclose(fp);
+
+    fp              = NULL;
+    nn.weights      = NULL;
+    nn.biases       = NULL;
+    nn.activations  = NULL;
+
+    fp = nn_io_fopen(
+        "/home/kali/project/git_repos/public/neural_network_in_c/example_models/"\
+        "test_nn_save_and_load_model",
+        ".nn", "rb"
+    );
+
+    NN_ASSERT(fp);
+    nn = nn_load_model(fp);
+    nn_print(nn, "nn after save and load");
+    nn_free(nn);
+    fclose(fp);
 }
 
 void test_nn_with_xor_model(void)

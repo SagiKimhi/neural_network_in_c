@@ -3,6 +3,7 @@
 
 void run_nn_tests(void)
 {
+    test_nn_save_and_load();
     test_nn_with_xor_model();
 }
 

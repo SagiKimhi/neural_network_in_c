@@ -31,6 +31,11 @@ typedef struct {
     nn_matrix_t *activations;
 } nn_t;
 
+typedef struct {
+    size_t arch_len;
+    size_t *arch;
+} nn_arch_t;
+
 
 /* ----------------------
  * Function Declarations:
@@ -59,7 +64,10 @@ extern void nn_forward(nn_t nn);
 
 
 /* Util Methods */
-extern void nn_print(nn_t nn, char *name);
+extern void nn_print(nn_t nn, const char *name);
+extern void nn_fprint(FILE *stream, nn_t nn, const char *name);
+extern void nn_save_model(FILE *fp, nn_t nn);
+extern nn_t nn_load_model(FILE *fp);
 
 
 #endif /* NN_H_ */

@@ -274,23 +274,74 @@ void nn_forward(nn_t nn)
 /* -------------
  * Util Methods:
  * ------------- */
-void nn_print(nn_t nn, char *name)
+void nn_print(nn_t nn, const char *name)
+{
+    nn_fprint(stdout, nn, name);
+}
+
+void nn_fprint(FILE *stream, nn_t nn, const char *name)
 {
     char buf[256] = {0};
 
     if (name)
-        printf("%s = ", name);
+        fprintf(stream, "%s = ", name);
 
-    printf("{\n");
+    fprintf(stream, "{\n");
     
     for (size_t i = 0; i < nn.nof_layers; i++) {
         NN_ASSERT(snprintf(buf, sizeof(buf), "%s%zu%s", "weight[", i, "]"));
-        nn_matrix_print(nn.weights[i], buf, 4);
+        nn_matrix_fprint(stream, nn.weights[i], buf, 4);
         NN_ASSERT(snprintf(buf, sizeof(buf), "%s%zu%s", "bias[", i, "]"));
-        nn_matrix_print(nn.biases[i], buf, 4);
+        nn_matrix_fprint(stream, nn.biases[i], buf, 4);
     }
 
-    printf("}\n");
+    fprintf(stream, "}\n");
+}
+
+void nn_save_model(FILE *fp, nn_t nn)
+{
+    NN_ASSERT(fp);
+    NN_ASSERT(!ferror(fp));
+    NN_ASSERT(nn.nof_layers);
+    NN_ASSERT(nn.activations && nn.weights && nn.biases);
+
+    fwrite(&nn.nof_layers, sizeof(nn.nof_layers), 1, fp);
+    
+    nn_matrix_save(fp, NN_INPUT(nn));
+
+    for (size_t layer = 1; layer < nn.nof_layers + 1; layer++) {
+        nn_matrix_save(fp, nn.activations[layer]);
+        nn_matrix_save(fp, nn.weights[layer - 1]);
+        nn_matrix_save(fp, nn.biases[layer - 1]);
+    }
+}
+
+nn_t nn_load_model(FILE *fp)
+{
+    nn_t nn;
+
+    NN_ASSERT(fp);
+    NN_ASSERT(!ferror(fp));
+
+    fread(&nn.nof_layers, sizeof(nn.nof_layers), 1, fp);
+
+    NN_ASSERT(!ferror(fp));
+
+    nn.activations  = NN_MALLOC(sizeof(*nn.activations) * (nn.nof_layers + 1));
+    nn.weights      = NN_MALLOC(sizeof(*nn.weights) * nn.nof_layers);
+    nn.biases       = NN_MALLOC(sizeof(*nn.biases) * nn.nof_layers);
+
+    NN_ASSERT(nn.activations && nn.weights && nn.biases);
+
+    NN_INPUT(nn) = nn_matrix_load(fp);
+
+    for (size_t layer = 1; layer < nn.nof_layers + 1; layer++) {
+        nn.activations[layer]   = nn_matrix_load(fp);
+        nn.weights[layer - 1]   = nn_matrix_load(fp);
+        nn.biases[layer - 1]    = nn_matrix_load(fp);
+    }
+
+    return nn;
 }
 
 

@@ -60,11 +60,6 @@ typedef struct {
     size_t  capacity;
 } nn_render_cost_info;
 
-typedef struct {
-    size_t arch_len;
-    size_t *arch;
-} nn_arch_t;
-
 #ifndef NN_PRINT_RESULTS_FUNC_T
     typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
     #define NN_PRINT_RESULTS_FUNC_T nn_print_func_t
