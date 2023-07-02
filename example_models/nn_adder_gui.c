@@ -1,5 +1,6 @@
-#include "raylib.h"
-#include <nn_render.h>
+#define NN_ACT_FUNC ACT_TANH
+
+#include "nn_render.h"
 
 #define BITS    (4)
 #define MAX_N   (1 << BITS)

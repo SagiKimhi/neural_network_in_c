@@ -1,8 +1,7 @@
 #ifndef NN_MATH_C_
 #define NN_MATH_C_
 
-#include <math.h>
-#include <nn_math.h>
+#include "nn_math.h"
 
 float actf(float x, nn_act_func_enum actf)
 {
@@ -48,6 +47,13 @@ float p_reluf(float x)
 float dp_reluf(float y)
 {
     return (y > 0 ? 1: NN_RELU_PARAM);
+}
+
+float tanhf(float x)
+{
+    float ex = expf(x);
+    float enx = expf(-x);
+    return (ex - enx)/(ex + enx);
 }
 
 float dtanhf(float y)

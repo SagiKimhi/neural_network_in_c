@@ -1,8 +1,7 @@
 #ifndef NN_RENDER_C_
 #define NN_RENDER_C_
 
-#include "raylib.h"
-#include <nn_render.h>
+#include "nn_render.h"
 
 #define NN_RENDER_GET_COST_GRAPH_POS_Y(y, cost, min, max, vspace)\
     ( (y) + ( 1 - ((cost) - (min)) / ((max) - (min)) ) * (vspace) )
@@ -30,7 +29,7 @@ const float default_nn_graph_frame_h_multiplier         = 0.95f;
 const float default_nn_graph_frame_w_multiplier         = 0.42f;
 const float default_nn_network_frame_h_multiplier       = 0.5f;
 const float default_nn_network_frame_w_multiplier       = 0.57f;
-const float default_nn_learning_rate                    = 1;
+const float default_nn_learning_rate                    = 0.1;
 
 /* ----------------------
  * Static Function Decls:
@@ -69,6 +68,7 @@ void nn_render_with_default_frames(
         .count = 0,
     };
     
+    fprintf(stdout, "Activation function is: %d\n", NN_ACT_FUNC);
     ts_in.data  = NULL;
     ts_out.data = NULL;
     load_data(NN_LOAD_DATA_FUNC_ARGS);
@@ -95,17 +95,6 @@ void nn_render_with_default_frames(
             nn_render_model_information_text(main_frame, cost_info, nn_rate, buf);
             EndDrawing();
         }
-
-        if (IsKeyDown(KEY_DOWN)) {
-            nn_rate -= 1e-3;
-            WaitTime(0.0000001);
-        }
-        
-        if (IsKeyDown(KEY_UP)) {
-            nn_rate += 1e-3;
-            WaitTime(0.0000001);
-        }
-        
 
         while ( (key = GetKeyPressed()) ) {
             switch (key) {

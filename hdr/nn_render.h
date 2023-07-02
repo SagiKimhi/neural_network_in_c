@@ -1,8 +1,8 @@
 #ifndef NN_RENDER_H_
 #define NN_RENDER_H_
 
+#include "nn.h"
 #include <raylib.h>
-#include <nn.h>
 
 #ifndef NN_RENDER_CIRCLE_COLOR_HIGH
     #define NN_RENDER_CIRCLE_COLOR_HIGH GREEN
@@ -30,15 +30,15 @@
 
 #define COST_INFO_INIT_CAP 256
 
-#define cost_info_append(cost_info, item)                                                          \
-    do {                                                                             \
-        if ((cost_info)->count >= (cost_info)->capacity) {                                         \
-            (cost_info)->capacity = (cost_info)->capacity == 0 ? COST_INFO_INIT_CAP : (cost_info)->capacity*2;   \
-            (cost_info)->items = realloc((cost_info)->items, (cost_info)->capacity*sizeof(*(cost_info)->items)); \
-            NN_ASSERT((cost_info)->items != NULL && "Buy more RAM lol");                   \
-        }                                                                            \
-                                                                                     \
-        (cost_info)->items[(cost_info)->count++] = (item);                                         \
+#define cost_info_append(cost_info, item)\
+    do {\
+        if ((cost_info)->count >= (cost_info)->capacity) {\
+            (cost_info)->capacity = (cost_info)->capacity == 0 ? COST_INFO_INIT_CAP : (cost_info)->capacity*2;\
+            (cost_info)->items = realloc((cost_info)->items, (cost_info)->capacity*sizeof(*(cost_info)->items));\
+            NN_ASSERT((cost_info)->items != NULL && "Buy more RAM lol");\
+        }\
+        \
+        (cost_info)->items[(cost_info)->count++] = (item);\
     } while (0)
 
 typedef struct {

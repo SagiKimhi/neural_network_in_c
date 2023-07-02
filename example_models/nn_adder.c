@@ -1,4 +1,4 @@
-#include <nn.h>
+#include "nn.h"
 
 #define BITS    (4)
 #define MAX_N   (1 << BITS)

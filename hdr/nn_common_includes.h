@@ -9,6 +9,6 @@
 #include <limits.h>
 #include <time.h>
 #include <ctype.h>
-#include <nn_defines.h>
+#include "nn_defines.h"
 
 #endif /* NN_COMMON_INCLUDES_H_ */

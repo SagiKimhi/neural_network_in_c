@@ -4,9 +4,9 @@
 /* ---------
  * Includes:
  * --------- */
-#include <nn_common_includes.h>
-#include <nn_rand.h>
-#include <nn_math.h>
+#include "nn_common_includes.h"
+#include "nn_rand.h"
+#include "nn_math.h"
 
 /* --------
  * Defines:

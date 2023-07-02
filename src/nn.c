@@ -1,7 +1,7 @@
 #ifndef NN_C_
 #define NN_C_
 
-#include <nn.h>
+#include "nn.h"
 
 
 /* -------------------

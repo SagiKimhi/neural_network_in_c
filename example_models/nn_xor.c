@@ -1,7 +1,7 @@
 #ifndef NN_XOR_C_
 #define NN_XOR_C_
 
-#include <nn_matrix.h>
+#include "nn_matrix.h"
 
 typedef struct {
     nn_matrix_t a0;

@@ -1,5 +1,5 @@
 //#define NN_BACKPROP_TRADITIONAL
-#include <nn.h>
+#include "nn.h"
 typedef void nn_load_data_func_t(char *data_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out);
 #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
 #define NN_LOAD_DATA_FUNC_ARGS "", &ts_in, &ts_out, 1

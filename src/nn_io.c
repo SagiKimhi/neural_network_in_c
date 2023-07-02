@@ -1,8 +1,7 @@
 #ifndef NN_IO_C_
 #define NN_IO_C_
 
-#include <nn_io.h>
-#include <stdio.h>
+#include "nn_io.h"
 
 FILE *nn_io_fopen(const char *filename, const char *file_extension, const char *mode)
 {

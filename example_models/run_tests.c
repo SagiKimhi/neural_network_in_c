@@ -1,5 +1,5 @@
-#include <nn_matrix_tests.h>
-#include <nn_tests.h>
+#include "nn_matrix_tests.h"
+#include "nn_tests.h"
 
 void run_nn_tests(void)
 {

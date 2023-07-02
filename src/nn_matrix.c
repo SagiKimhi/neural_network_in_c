@@ -1,8 +1,7 @@
 #ifndef NN_MATRIX_C_
 #define NN_MATRIX_C_
 
-#include "nn_defines.h"
-#include <nn_matrix.h>
+#include "nn_matrix.h"
 
 /* -------------------
  * Allocation Methods:

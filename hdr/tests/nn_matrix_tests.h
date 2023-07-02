@@ -1,7 +1,7 @@
 #ifndef NN_MATRIX_TESTS_H_
 #define NN_MATRIX_TESTS_H_
 
-#include <nn_matrix.h>
+#include "nn_matrix.h"
 
 extern void test_nn_matrix_alloc(void);
 extern void test_nn_matrix_rand(void);

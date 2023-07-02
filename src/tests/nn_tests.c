@@ -1,6 +1,4 @@
-#include "nn.h"
-#include <nn_tests.h>
-#include <nn_io.h>
+#include "nn_tests.h"
 
 #define STRINGIFY(s) #s
 

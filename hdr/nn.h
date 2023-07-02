@@ -4,8 +4,8 @@
 /* ---------
  * Includes:
  * --------- */
-#include <nn_common_includes.h>
-#include <nn_matrix.h>
+#include "nn_common_includes.h"
+#include "nn_matrix.h"
 
 
 /* --------
@@ -15,10 +15,6 @@
 #define NN_INPUT(nn)        ( (nn).activations[0] )
 #define NN_OUTPUT(nn)       ( (nn).activations[(nn).nof_layers] )
 #define NN_SIZEOF_ARR(arr)  ( sizeof((arr)) / sizeof((arr)[0]) )
-
-#ifndef NN_ACT_FUNC
-    #define NN_ACT_FUNC ACT_SIGMOID
-#endif
 
 
 /* ---------
