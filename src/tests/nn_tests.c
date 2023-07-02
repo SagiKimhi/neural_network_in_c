@@ -1,5 +1,5 @@
 #include <nn_tests.h>
-#include <stdio.h>
+#include <nn_io.h>
 
 #define STRINGIFY(s) #s
 

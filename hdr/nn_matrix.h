@@ -50,6 +50,9 @@ extern void nn_matrix_actf(nn_matrix_t m, nn_act_func_enum act_func);
 extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src);
 extern nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row);
 extern void nn_matrix_print(nn_matrix_t m, char *name, int indent);
+extern void nn_matrix_fprint(FILE *stream, nn_matrix_t m, const char *name, int indent);
+extern void nn_matrix_save(FILE *fp,nn_matrix_t m);
+extern nn_matrix_t nn_matrix_load(FILE *fp);
 
 
 #endif /*NN_MATRIX_H_*/

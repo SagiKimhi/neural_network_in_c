@@ -142,27 +142,64 @@ nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row)
 
 void nn_matrix_print(nn_matrix_t m, char *name, int indent)
 {
+    nn_matrix_fprint(stdout, m, name, indent);
+}
+
+void nn_matrix_fprint(FILE *stream, nn_matrix_t m, const char *name, int indent)
+{
     NN_ASSERT(m.data);
 
     if (name)
-        printf("%*s%s = ", indent, "", name);
+        fprintf(stream, "%*s%s = ", indent, "", name);
     
-    printf("{\n");
+    fprintf(stream, "{\n");
 
     for (size_t row = 0; row < m.rows; row++) {
-        printf("%*s\t[ ", indent, "");
+        fprintf(stream, "%*s\t[ ", indent, "");
 
         for (size_t col = 0; col < m.cols; col++) {
-            printf(
+            fprintf(stream, 
                 "%f%s ", 
                 NN_MATRIX_AT(m, row, col), (col + 1 < m.cols ? ",": "")
             );
         }
 
-        printf("]%s\n", (row + 1 < m.rows ? ",": ""));
+        fprintf(stream, "]%s\n", (row + 1 < m.rows ? ",": ""));
     }
 
-    printf("%*s}\n", indent, "");
+    fprintf(stream, "%*s}\n", indent, "");
+}
+
+void nn_matrix_save(FILE *fp,nn_matrix_t m)
+{
+    NN_ASSERT(m.data);
+    NN_ASSERT(!ferror(fp));
+
+    fwrite(&m.rows, sizeof(m.rows), 1, fp);
+    fwrite(&m.cols, sizeof(m.cols), 1, fp);
+
+    for (size_t row = 0; row < m.rows; row++) {
+        fwrite(&NN_MATRIX_AT(m, row, 0), sizeof(m.data[0]), m.cols, fp);
+    }
+    
+    NN_ASSERT(!ferror(fp));
+}
+
+nn_matrix_t nn_matrix_load(FILE *fp)
+{
+    nn_matrix_t m;
+    
+    fread(&m.rows, sizeof(m.rows), 1, fp);
+    fread(&m.cols, sizeof(m.cols), 1, fp);
+
+    m = nn_matrix_alloc(m.rows, m.cols);
+
+    fread(m.data, sizeof(m.data[0]), m.rows * m.cols, fp);
+
+    NN_ASSERT(m.data);
+    NN_ASSERT(!ferror(fp));
+
+    return m;
 }
 
 
