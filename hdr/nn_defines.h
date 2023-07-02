@@ -23,6 +23,9 @@
  * --------- */
 typedef enum {
     ACT_SIGMOID,
+    ACT_P_RELU,
+    ACT_TANH,
+    ACT_ELU,
 } nn_act_func_enum;
 
 
