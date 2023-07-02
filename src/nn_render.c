@@ -107,11 +107,17 @@ void nn_render_with_default_frames(
                     break;
 
                 case KEY_DOWN:
-                    nn_rate -= 1e-1;
+                    if (IsKeyDown(KEY_LEFT_CONTROL))
+                        nn_rate -= 1e-2;
+                    else
+                        nn_rate -= 1e-1;
                     break;
 
                 case KEY_UP:
-                    nn_rate += 1e-1;
+                    if (IsKeyDown(KEY_LEFT_CONTROL))
+                        nn_rate += 1e-2;
+                    else
+                        nn_rate += 1e-1;
                     break;
 
                 case KEY_P:
