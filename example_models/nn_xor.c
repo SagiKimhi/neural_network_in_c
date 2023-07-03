@@ -1,6 +1,4 @@
-#ifndef NN_XOR_C_
-#define NN_XOR_C_
-
+#define NN_MATRIX_IMPLEMENTATION
 #include "nn_matrix.h"
 
 typedef struct {
@@ -273,5 +271,3 @@ void nn_xor_forward(nn_xor_t xor)
 #endif
 }
 
-
-#endif /* NN_XOR_C_ */

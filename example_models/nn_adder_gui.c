@@ -1,5 +1,5 @@
 #define NN_ACT_FUNC ACT_TANH
-
+#define NN_RENDER_IMPLEMENTATION
 #include "nn_render.h"
 
 #define BITS    (4)

@@ -2,6 +2,16 @@
 
 #define STRINGIFY(s) #s
 
+int main(int argc, char **argv)
+{
+    srand(69);
+
+    test_nn_save_and_load();
+    test_nn_with_xor_model();
+    
+    return 0;
+}
+
 void test_nn_print(void)
 {
     size_t arch[] = {2, 2, 1};
@@ -63,8 +73,7 @@ void test_nn_save_and_load(void)
     nn_print(nn, "nn before save");
 
     fp = nn_io_fopen(
-        "/home/kali/project/git_repos/public/neural_network_in_c/example_models/"\
-        "test_nn_save_and_load_model",
+        "./models/test_nn_save_and_load_model",
         ".nn", "wb"
     );
 
@@ -79,8 +88,7 @@ void test_nn_save_and_load(void)
     nn.activations  = NULL;
 
     fp = nn_io_fopen(
-        "/home/kali/project/git_repos/public/neural_network_in_c/example_models/"\
-        "test_nn_save_and_load_model",
+        "./models/test_nn_save_and_load_model",
         ".nn", "rb"
     );
 

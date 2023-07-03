@@ -15,3 +15,14 @@ extern float rand_float(void); /* returns a random float */
 
 
 #endif /* NN_RAND_H_ */
+
+#ifdef NN_RAND_IMPLEMENTATION
+
+float rand_float(void)
+{
+    return (
+        ((float) rand()) / ((float)RAND_MAX)
+    );
+}
+
+#endif /* NN_RAND_IMPLEMENTATION */

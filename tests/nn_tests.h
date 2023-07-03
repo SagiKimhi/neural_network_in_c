@@ -1,8 +1,12 @@
 #ifndef NN_TESTS_H_
 #define NN_TESTS_H_
 
-#include "nn.h"
-#include "nn_io.h"
+#include "nn_common_includes.h"
+
+#ifndef NN_IMPLEMENTATION
+    #define NN_IMPLEMENTATION
+    #include "nn.h"
+#endif
 
 extern void test_nn_print(void);
 extern void test_nn_rand(void);

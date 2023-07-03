@@ -1,16 +1,22 @@
+#include <unistd.h>
+
+
+/* -------------
+ * nn.h Defines:
+ * ------------- */
 //#define NN_BACKPROP_TRADITIONAL
+//#define NN_ACT_FUNC ACT_SIGMOID
+#define NN_IMPLEMENTATION
 #include "nn.h"
+
+/* --------------------
+ * nn_render.h defines:
+ * -------------------- */
 typedef void nn_load_data_func_t(char *data_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out);
 #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
-#define NN_LOAD_DATA_FUNC_ARGS "", &ts_in, &ts_out, 1
-
-
-/* ---------
- * Includes:
- * --------- */
-#include <nn_render.h>
-#include <unistd.h>
-#include <nn_io.h>
+#define NN_LOAD_DATA_FUNC_ARGS "", &ts_in, &ts_out
+#define NN_RENDER_IMPLEMENTATION
+#include "nn_render.h"
 
 
 /* --------

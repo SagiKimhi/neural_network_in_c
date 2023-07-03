@@ -1,7 +1,17 @@
-#ifndef NN_MATRIX_TESTS_C_
-#define NN_MATRIX_TESTS_C_
-
 #include "nn_matrix_tests.h"
+
+
+int main(int argc,  char **argv)
+{
+    test_nn_matrix_alloc();
+    test_nn_matrix_rand();
+    test_nn_matrix_sum();
+    test_nn_matrix_dot();
+    test_nn_matrix_sigmoid();
+
+    return 0;
+}
+
 
 void test_nn_matrix_alloc(void)
 {
@@ -88,6 +98,4 @@ void test_nn_matrix_sigmoid(void)
 
     nn_matrix_free(m);
 }
-
-#endif /* NN_MATRIX_TESTS_C_ */
 

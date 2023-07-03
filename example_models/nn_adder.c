@@ -1,3 +1,4 @@
+#define NN_IMPLEMENTATION
 #include "nn.h"
 
 #define BITS    (4)

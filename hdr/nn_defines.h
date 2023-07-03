@@ -1,6 +1,7 @@
 #ifndef NN_DEFINES_H_
 #define NN_DEFINES_H_
 
+
 #if !defined NN_MALLOC
     #include <stdlib.h>
     #define NN_MALLOC malloc
@@ -17,7 +18,7 @@
 #endif /*NN_ASSERT*/
 
 #if !defined NN_ACT_FUNC
-    #define NN_ACT_FUNC ACT_ELU
+    #define NN_ACT_FUNC ACT_SIGMOID
 #endif
 
 #if !defined NN_RELU_PARAM
@@ -37,7 +38,6 @@ typedef enum {
     ACT_TANH = 3,
     ACT_ELU = 4,
 } nn_act_func_enum;
-
 
 
 #endif /* NN_DEFINES_H_ */
