@@ -1,8 +1,11 @@
-#define NN_ACT_FUNC ACT_TANH
+
+//#define NN_BACKPROP_TRADITIONAL
+#define NN_ACT_FUNC ACT_SIGMOID
+
 #define NN_RENDER_IMPLEMENTATION
 #include "nn_render.h"
 
-#define BITS    (4)
+#define BITS    (5)
 #define MAX_N   (1 << BITS)
 
 /* General Window Constants */
@@ -12,13 +15,13 @@ void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
 int main(int argc, char **argv)
 {
-    srand(time(0));
+    srand(69);
 
-    size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, BITS + 1};
+    size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, 2 * BITS, BITS + 1};
     size_t      arch_len    = NN_SIZEOF_ARR(arch);
 
     nn_render_with_default_frames(
-        (nn_arch_t){.arch = arch, .arch_len = arch_len}, 0, 1, 
+        (nn_arch_t){.arch = arch, .arch_len = arch_len}, -1, 1, 
         &init_ts_values, &print_model_results
     );
 

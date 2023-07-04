@@ -70,12 +70,12 @@ float dsigmoidf(float y)
 
 float p_reluf(float x)
 {
-    return (x > 0 ? x: x * NN_RELU_PARAM);
+    return (x >= 0 ? x : x * NN_RELU_PARAM);
 }
 
 float dp_reluf(float y)
 {
-    return (y > 0 ? 1: NN_RELU_PARAM);
+    return (y >= 0 ? 1 : NN_RELU_PARAM);
 }
 
 float tanhf(float x)

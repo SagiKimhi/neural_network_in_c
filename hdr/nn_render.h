@@ -20,6 +20,37 @@
 /* --------
  * Defines:
  * -------- */
+/* User May define his own print and data loading functions
+ * and function args to be called when P/L keys are pressed
+ * when running the gui application */
+#ifndef NN_PRINT_RESULTS_FUNC_T
+    typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
+
+    #define NN_PRINT_RESULTS_FUNC_T nn_print_func_t
+
+    #define NN_PRINT_RESULTS_FUNC_ARGS nn, ts_in, ts_out
+
+#elif !defined NN_PRINT_RESULTS_FUNC_ARGS
+    #error "Please define NN_PRINT_RESULTS_ARGS for passing arguments"\
+            "to a user defined nn_print_func_t function"
+
+#endif /* NN_PRING_RESULTS_FUNC_T */
+
+#ifndef NN_LOAD_DATA_FUNC_T
+    typedef void nn_load_data_func_t(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+
+    #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
+
+    #define NN_LOAD_DATA_FUNC_ARGS &ts_in, &ts_out
+
+#elif !defined NN_LOAD_DATA_FUNC_ARGS
+    #error "Please define NN_LOAD_DATA_FUNC_ARGS for passing arguments"\
+            "to user defined function of type nn_load_data_func_t"
+
+#endif /* NN_LOAD_DATA_FUNC_T */
+
+/* Default Circle and Weight lines colors - user may define
+ * other colors instead before including the header */
 #ifndef NN_RENDER_CIRCLE_COLOR_HIGH
     #define NN_RENDER_CIRCLE_COLOR_HIGH GREEN
 #endif
@@ -44,7 +75,9 @@
     #define NN_RENDER_LINE_COLOR_LOW PINK
 #endif
 
-#define COST_INFO_INIT_CAP 256
+#ifndef COST_INFO_INIT_CAP
+    #define COST_INFO_INIT_CAP 256
+#endif
 
 #define cost_info_append(cost_info, item)\
     do {\
@@ -57,6 +90,10 @@
         (cost_info)->items[(cost_info)->count++] = (item);\
     } while (0)
 
+
+/* ---------
+ * Typedefs:
+ * --------- */
 typedef struct {
     int     nof_hcircles;
     int     nof_vcircles;
@@ -76,25 +113,12 @@ typedef struct {
     size_t  capacity;
 } nn_render_cost_info;
 
-#ifndef NN_PRINT_RESULTS_FUNC_T
-    typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
-    #define NN_PRINT_RESULTS_FUNC_T nn_print_func_t
-    #define NN_PRINT_RESULTS_FUNC_ARGS nn, ts_in, ts_out
-#elif !defined NN_PRINT_RESULTS_FUNC_ARGS
-#error "Please define NN_PRINT_RESULTS_ARGS for passing arguments"\
-        "to a user defined nn_print_func_t function"
-#endif /* NN_PRING_RESULTS_FUNC_T */
 
+/* ----------------------
+ * Function Declarations:
+ * ---------------------- */
 
-#ifndef NN_LOAD_DATA_FUNC_T
-    typedef void nn_load_data_func_t(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
-    #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
-    #define NN_LOAD_DATA_FUNC_ARGS &ts_in, &ts_out
-#elif !defined NN_LOAD_DATA_FUNC_ARGS
-#error "Please define NN_LOAD_DATA_FUNC_ARGS for passing arguments"\
-        "to user defined function of type nn_load_data_func_t"
-#endif /* NN_LOAD_DATA_FUNC_T */
-
+/* Get Methods */
 extern float get_frame_vpad(Rectangle frame);
 extern float get_frame_hpad(Rectangle frame);
 extern float get_frame_vspace(Rectangle frame);
@@ -103,8 +127,9 @@ extern float get_relative_object_vspace(Rectangle frame, int nof_vertical_object
 extern float get_relative_object_hspace(Rectangle frame, int nof_horizontal_objects);
 extern float get_object_vpad(float relative_object_vspace);
 extern float get_object_hpad(float relative_object_hspace);
-extern float calc_neuron_circle_radius(nn_t nn, Rectangle frame);
 extern nn_r_layer_circ_info get_layer_circle_info( nn_t nn, size_t layer, Rectangle frame);
+
+
 extern void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_info, float rate, char buf[256]);
 extern void nn_render_x_y_axis_internal(Rectangle frame);
 extern void nn_render_cost_graph(Rectangle frame, nn_render_cost_info cost);
@@ -156,6 +181,7 @@ const float default_nn_learning_rate                    = 0.1;
  * Static Function Decls:
  * ---------------------- */
 static int nn_render_find_max_nof_neuron_circles(nn_t nn);
+static float nn_render_calc_neuron_circle_radius(nn_t nn, Rectangle frame);
 static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max, float *min);
 static void nn_render_update_frames_internal_(
     Rectangle *main_frame, Rectangle *network_frame, Rectangle *graph_frame
@@ -227,17 +253,29 @@ void nn_render_with_default_frames(
                     break;
 
                 case KEY_DOWN:
-                    if (IsKeyDown(KEY_LEFT_CONTROL))
+                    if (IsKeyDown(KEY_LEFT_SHIFT))
+                        nn_rate -= 1e-3;
+                    else if (IsKeyDown(KEY_LEFT_CONTROL))
                         nn_rate -= 1e-2;
                     else
                         nn_rate -= 1e-1;
                     break;
 
                 case KEY_UP:
-                    if (IsKeyDown(KEY_LEFT_CONTROL))
+                    if (IsKeyDown(KEY_LEFT_SHIFT))
+                        nn_rate += 1e-3;
+                    else if (IsKeyDown(KEY_LEFT_CONTROL))
                         nn_rate += 1e-2;
                     else
                         nn_rate += 1e-1;
+                    break;
+
+                case KEY_KP_0:
+                    nn_rate = 0;
+                    break;
+
+                case KEY_KP_1:
+                    nn_rate = 1;
                     break;
 
                 case KEY_P:
@@ -245,7 +283,7 @@ void nn_render_with_default_frames(
                         optional_print_func_ptr(NN_PRINT_RESULTS_FUNC_ARGS);
                     break;
 
-                case KEY_M:
+                case KEY_D:
                     printf("\n\n----------------------------------\n\n");
                     printf("ts_in.rows: %zu\n", ts_in.rows);
                     printf("ts_in.cols: %zu\n", ts_in.cols);
@@ -253,6 +291,12 @@ void nn_render_with_default_frames(
                     printf("ts_out.rows: %zu\n", ts_out.rows);
                     printf("ts_out.cols: %zu\n", ts_out.cols);
                     NN_MATRIX_PRINT(ts_out);
+                    printf("\n\n----------------------------------\n\n");
+                    break;
+
+                case KEY_M:
+                    printf("\n\n----------------------------------\n\n");
+                    NN_PRINT(nn);
                     printf("\n\n----------------------------------\n\n");
                     break;
 
@@ -266,6 +310,44 @@ void nn_render_with_default_frames(
                     stop_flag = 1;
                     i = 0;
                     break;
+
+                case KEY_F1: {
+                    FILE *mfp = NULL;
+                    char buf[FILENAME_MAX+1] = {0};
+                    fprintf(stdout, "Please provide a path to save the model to: ");
+
+                    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
+                        break;
+
+                    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "wb")) )
+                        break;
+
+                    nn_save_model(mfp, nn);
+
+                    fclose(mfp);
+                    break;
+                }
+
+                case KEY_F2: {
+                    FILE *mfp = NULL;
+                    char buf[FILENAME_MAX+1] = {0};
+                    fprintf(stdout, "Please provide a path to load the model from: ");
+
+                    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
+                        break;
+
+                    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "rb")) )
+                        break;
+
+                    nn_free(nn);
+                    nn = nn_load_model(mfp);
+                    fclose(mfp);
+                    cost_info.count = 0;
+                    cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
+                    i = 0;
+                    stop_flag = 1;
+                    continue;
+                }
             }
 
             key = 0;
@@ -276,7 +358,6 @@ void nn_render_with_default_frames(
             nn_rand(nn, rand_low, rand_high);
             cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
             restart_flag = 0;
-            nn_rate = default_nn_learning_rate;
             i = 0;
             continue;
         }
@@ -454,20 +535,6 @@ void nn_render_neuron_layer_circles(nn_t nn, size_t layer, Rectangle frame)
     }
 }
 
-float calc_neuron_circle_radius(nn_t nn, Rectangle frame)
-{
-    float   circ_hspace             = get_relative_object_hspace(frame, nn.nof_layers + 1);
-    float   circ_vspace             = get_relative_object_vspace(frame, nn_render_find_max_nof_neuron_circles(nn));
-    float   circ_vpad               = get_object_vpad(circ_vspace);
-    float   circ_hpad               = get_object_hpad(circ_hspace);
-
-    return (
-        circ_vspace < circ_hspace ?
-        ( (circ_vspace - circ_vpad * 2) / 2 ) :
-        ( (circ_hspace - circ_hpad * 2) / 2 )
-    );
-}
-
 nn_r_layer_circ_info get_layer_circle_info(
     nn_t nn, size_t layer, Rectangle frame
 )
@@ -480,7 +547,7 @@ nn_r_layer_circ_info get_layer_circle_info(
     info.nof_hcircles   = nn.nof_layers + 1;
     info.vspace = get_relative_object_vspace(frame, info.nof_vcircles);
     info.hspace = get_relative_object_hspace(frame, info.nof_hcircles);
-    info.radius = calc_neuron_circle_radius(nn, frame);
+    info.radius = nn_render_calc_neuron_circle_radius(nn, frame);
     info.hpad   = (info.hspace - info.radius * 2) / 2;
     info.vpad   = (info.vspace - info.radius * 2) / 2;
     info.offset.x = info.hpad * 2 + info.radius * 2;
@@ -608,6 +675,20 @@ static void nn_render_update_frames_internal_(
         ),
     };
 
+}
+
+static float nn_render_calc_neuron_circle_radius(nn_t nn, Rectangle frame)
+{
+    float   circ_hspace             = get_relative_object_hspace(frame, nn.nof_layers + 1);
+    float   circ_vspace             = get_relative_object_vspace(frame, nn_render_find_max_nof_neuron_circles(nn));
+    float   circ_vpad               = get_object_vpad(circ_vspace);
+    float   circ_hpad               = get_object_hpad(circ_hspace);
+
+    return (
+        circ_vspace < circ_hspace ?
+        ( (circ_vspace - circ_vpad * 2) / 2 ) :
+        ( (circ_hspace - circ_hpad * 2) / 2 )
+    );
 }
 
 

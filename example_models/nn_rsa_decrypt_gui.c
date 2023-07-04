@@ -4,17 +4,16 @@
 /* -------------
  * nn.h Defines:
  * ------------- */
-//#define NN_BACKPROP_TRADITIONAL
-//#define NN_ACT_FUNC ACT_SIGMOID
+#define NN_BACKPROP_TRADITIONAL
+#define NN_ACT_FUNC ACT_P_RELU
+#define NN_ELU_PARAM 0.01f
+#define NN_RELU_PARAM 0.003f
 #define NN_IMPLEMENTATION
 #include "nn.h"
 
 /* --------------------
  * nn_render.h defines:
  * -------------------- */
-typedef void nn_load_data_func_t(char *data_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out);
-#define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
-#define NN_LOAD_DATA_FUNC_ARGS "", &ts_in, &ts_out
 #define NN_RENDER_IMPLEMENTATION
 #include "nn_render.h"
 
@@ -60,24 +59,18 @@ const size_t    max_priv_key_path_len   = (
  * -------------------- */
 uint8_t validate_cmdline_args(int argc, const char **argv);
 static void report_cmdline_arg_err(cmdline_args_err_flags flag, char *flag_name);
-void load_training_data(char *key_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
 void print_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
 
 int main(int argc, char **argv)
 {
     srand(time(0));
-    nn_matrix_t ts_in, ts_out;
-    
-    load_training_data("encrypted_text.enc", &ts_in, &ts_out);
 
-    if (ts_in.data == NULL || ts_out.data == NULL)
-        return EXIT_FAILURE;
-
-    size_t  arch[]              = {ts_in.cols, 23, 23, 23, 23, 23, 23, ts_out.cols};
+    size_t  arch[]              = {nn_input_size, 23, 23, 23, 23, 23, 23, nn_output_size};
     size_t  arch_len            = NN_SIZEOF_ARR(arch);
 
-    nn_render_with_default_frames((nn_arch_t){arch_len, arch}, -1.2f, 1.2f, &load_training_data, &print_results);
+    nn_render_with_default_frames((nn_arch_t){arch_len, arch}, -1.3f, 0, &load_training_data, &print_results);
     
     return EXIT_SUCCESS;
 }
@@ -124,9 +117,10 @@ void print_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out)
 }
 
 
-void load_training_data(char *key_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_out)
+void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
 {
 
+    char    filepath[FILENAME_MAX + 1]      = {0};
     uint8_t err_flag                        = 0;
     size_t  decrypted_text_offset           = 0;
     size_t  encrypted_text_len              = 0;
@@ -136,11 +130,24 @@ void load_training_data(char *key_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_
     FILE    *input_data_file                = NULL;
     FILE    *output_data_file               = NULL;
 
-    if (!(input_data_file = nn_io_fopen(key_filepath, ".enc", "r"))) {
+    fprintf(stdout, 
+        "Please provide a path to the encrypted/decrypted file "\
+        "without the file extension.\n"\
+        "It is assumed that the decrypted file name ends with a .txt extension\n"\
+        "and that the decrypted file name ends with a .enc extension.\n"\
+        "Therefore, the if the name of decrypted text file is \"text.txt\""\
+        " then the filepath you provide should look something like this:\n"\
+        "<path to file directory>/text\n"\
+        "Considering the previous example, please provide a filepath: "
+    );
+    nn_io_get_line(filepath, FILENAME_MAX, stdin);
+    fprintf(stdout, "\n");
+
+    if (!(input_data_file = nn_io_fopen(filepath, ".enc", "r"))) {
         err_flag = 1;
     }
 
-    if (!(output_data_file = nn_io_fopen(key_filepath, ".txt", "r"))) {
+    if (!(output_data_file = nn_io_fopen(filepath, ".txt", "r"))) {
         err_flag = 1;
     }
 
@@ -176,18 +183,18 @@ void load_training_data(char *key_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_
         }
     }
 
-    if (ts_in->data == NULL) {
+    if (!err_flag && ts_in->data == NULL) {
         *ts_in = nn_matrix_alloc(1, nn_input_size);
     }
 
-    if (ts_out->data == NULL) {
+    if (!err_flag && ts_out->data == NULL) {
         *ts_out = nn_matrix_alloc(1, nn_output_size);
     }
 
-    for (size_t j = 0; j < ts_in->cols; j++)
+    for (size_t j = 0; !err_flag && j < ts_in->cols; j++)
         NN_MATRIX_AT(*ts_in, 0, j) = (j < encrypted_text_len ? ( (encrypted_text_buf[j]) / (float)(unsigned)UINT8_MAX): 0);
 
-    for (size_t j = 0; j < ts_out->cols; j++)
+    for (size_t j = 0; !err_flag && j < ts_out->cols; j++)
         NN_MATRIX_AT(*ts_out, 0, j) = ( j < decrypted_text_len ? ((decrypted_text_buf[j]) / (float)CHAR_MAX): 0);
 
     fclose(input_data_file);
@@ -196,6 +203,7 @@ void load_training_data(char *key_filepath, nn_matrix_t *ts_in, nn_matrix_t *ts_
     output_data_file = NULL;
 
     if (err_flag) {
+        fprintf(stderr, "err_flag was raised!\n");
         if (ts_in->data){
             nn_matrix_free(*ts_in);
             ts_out->data = NULL;
