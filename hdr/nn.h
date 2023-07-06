@@ -57,6 +57,12 @@ typedef struct {
     size_t *arch;
 } nn_arch_t;
 
+typedef struct {
+    size_t  begin;
+    float   cost;
+    bool    finished;
+} nn_batch_t;
+
 
 /* ----------------------
  * Function Declarations:
@@ -70,7 +76,11 @@ extern void nn_free(nn_t nn);
 extern void nn_rand(nn_t nn, float low, float high);
 extern void nn_memset(nn_t nn, float val);
 
-/* NN Methods: */
+/* Training Methods: */
+extern void nn_mini_batch_process(
+    nn_batch_t *batch, size_t batch_size, 
+    nn_t nn, nn_t grad, nn_matrix_t ts_inout, float rate
+);
 extern void nn_learn(nn_t nn, nn_t grad, float rate);
 extern void nn_back_propagation(
     nn_t nn, nn_t grad, 
@@ -80,6 +90,8 @@ extern void nn_finite_difference(
     nn_t nn, nn_t grad, float eps,
     nn_matrix_t ts_in, nn_matrix_t ts_out
 );
+
+/* Cost and forwarding methods */
 extern float nn_cost(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 extern void nn_forward(nn_t nn);
 
@@ -178,6 +190,52 @@ void nn_memset(nn_t nn, float val)
 /* -----------
  * NN Methods:
  * ----------- */
+void nn_mini_batch_process(
+    nn_batch_t *batch, size_t batch_size, 
+    nn_t nn, nn_t grad, nn_matrix_t ts_inout, float rate
+)
+{
+    NN_ASSERT(batch);
+    NN_ASSERT(ts_inout.cols == (NN_INPUT(nn).cols + NN_OUTPUT(nn).cols));
+
+    size_t size = batch_size;
+
+    if (batch->finished) {
+        batch->cost     = 0;
+        batch->begin    = 0;
+        batch->finished = false;
+    }
+
+    if (batch->begin + size >= ts_inout.rows)
+        size = ts_inout.rows - batch->begin;
+
+    nn_matrix_t ts_in = {
+        .rows   = size,
+        .cols   = NN_INPUT(nn).cols,
+        .stride = ts_inout.cols,
+        .data   = &NN_MATRIX_AT(ts_inout, batch->begin, 0),
+    };
+    nn_matrix_t ts_out = {
+        .rows   = size,
+        .cols   = NN_OUTPUT(nn).cols,
+        .stride = ts_inout.cols,
+        .data   = &NN_MATRIX_AT(ts_inout, batch->begin, NN_INPUT(nn).cols),
+    };
+
+    nn_back_propagation(nn, grad, ts_in, ts_out);
+    nn_learn(nn, grad, rate);
+
+    batch->cost     += nn_cost(nn, ts_in, ts_out);
+    batch->begin    += batch_size;
+
+    if (batch->begin >= ts_inout.rows) {
+        size_t batch_count = (ts_inout.rows + batch_size - 1) / batch_size;
+        
+        batch->cost     /= batch_count;
+        batch->finished = true;
+    }
+}
+
 void nn_learn(nn_t nn, nn_t grad, float rate)
 {
     for (size_t i = 0; i < nn.nof_layers; i++) {
@@ -407,6 +465,8 @@ void nn_save_model(FILE *fp, nn_t nn)
         nn_matrix_save(fp, nn.weights[layer - 1]);
         nn_matrix_save(fp, nn.biases[layer - 1]);
     }
+
+    NN_ASSERT(!ferror(fp));
 }
 
 nn_t nn_load_model(FILE *fp)

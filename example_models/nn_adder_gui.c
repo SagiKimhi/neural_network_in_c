@@ -1,43 +1,50 @@
 
 //#define NN_BACKPROP_TRADITIONAL
 #define NN_ACT_FUNC ACT_SIGMOID
+#define NN_ELU_PARAM 0.01f
 
 #define NN_RENDER_IMPLEMENTATION
 #include "nn_render.h"
 
-#define BITS    (5)
+#define BITS    (6)
 #define MAX_N   (1 << BITS)
 
 /* General Window Constants */
 
-void init_ts_values(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+void init_ts_values(nn_matrix_t *ts_inout);
 void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
 int main(int argc, char **argv)
 {
-    srand(69);
+    srand(time(0));
 
-    size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, 2 * BITS, BITS + 1};
+    size_t      arch[]      = { 2 * BITS, 3 * BITS, 3 * BITS, 3 * BITS, 3 * BITS, BITS + 1};
     size_t      arch_len    = NN_SIZEOF_ARR(arch);
+    nn_render_cfg_t render_cfg  = {
+        .nn_arch                    = {.arch = arch, .arch_len = arch_len},
+        .nn_rate                    = 1e-1,
+        .rand_low                   = -1,
+        .rand_high                  = 1,
+        .batch_size                 = 125,
+        .batches_per_frame          = 0x20,
+        .shuffle_rows               = true,
+        .load_data_fn               = &init_ts_values,
+        .optional_render_results_fn = NULL,
+        .optional_print_results_fn  = &print_model_results,
+    };
 
-    nn_render_with_default_frames(
-        (nn_arch_t){.arch = arch, .arch_len = arch_len}, -1, 1, 
-        &init_ts_values, &print_model_results
-    );
+    nn_render_gui(render_cfg);
 
     return 0;
 }
 
 
-void init_ts_values(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
+void init_ts_values(nn_matrix_t *ts_inout)
 {
     size_t n_samples = MAX_N * MAX_N;
 
-    if (!ts_in->data)
-        *ts_in = nn_matrix_alloc(n_samples, 2 * BITS);
-
-    if (!ts_out->data)
-        *ts_out = nn_matrix_alloc(n_samples, BITS + 1);
+    if (!ts_inout->data)
+        *ts_inout = nn_matrix_alloc(n_samples, 2 * BITS + BITS + 1);
 
     for (size_t n = 0; n < n_samples; n++) {
         size_t x = n / MAX_N;
@@ -45,15 +52,15 @@ void init_ts_values(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
         size_t z = x + y;
 
         for (size_t col = 0; col < BITS; col++) {
-            NN_MATRIX_AT(*ts_in, n, col)         = ( (x >> (BITS -1 - col) ) & 1);
-            NN_MATRIX_AT(*ts_in, n, BITS + col)  = ( (y >> (BITS -1 - col) ) & 1);
-            NN_MATRIX_AT(*ts_out, n, col)        = ( 
+            NN_MATRIX_AT(*ts_inout, n, col)         = ( (x >> (BITS -1 - col) ) & 1);
+            NN_MATRIX_AT(*ts_inout, n, BITS + col)  = ( (y >> (BITS -1 - col) ) & 1);
+            NN_MATRIX_AT(*ts_inout, n, 2*BITS+col)        = ( 
                 z < MAX_N ? ( (z >> (BITS - 1 - col) ) & 1 ): 0
             );
         }
 
         if (z >= MAX_N)
-            NN_MATRIX_AT(*ts_out, n, ts_out->cols-1) = 1;
+            NN_MATRIX_AT(*ts_inout, n, 2*BITS+BITS) = 1;
     }
 }
 
@@ -65,9 +72,6 @@ void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out)
     size_t      n_samples   = MAX_N * MAX_N;
     size_t      err_cnt     = 0;
 
-    NN_ASSERT(ts_in.rows == n_samples);
-    NN_ASSERT(ts_out.rows == n_samples);
-
     printf("\n\n-------------------------------------------------------\n\n");
 
     for (size_t n = 0; n < n_samples; n++) {
@@ -77,10 +81,18 @@ void print_model_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out)
         size_t  actual_result       = 0;
         size_t  actual_undetermined = 0;
 
-        nn_matrix_copy(NN_INPUT(nn), nn_matrix_row(ts_in, n));
-        nn_forward(nn);
-
         printf("%zu + %zu = ", x, y);
+
+        for (size_t col = 0; col < BITS; col++) {
+            NN_MATRIX_AT(NN_INPUT(nn), 0, col)          = ( 
+                (x >> (BITS -1 - col) ) & 1 
+            );
+            NN_MATRIX_AT(NN_INPUT(nn), 0, BITS + col)   = ( 
+                (y >> (BITS -1 - col) ) & 1
+            );
+        }
+
+        nn_forward(nn);
 
         for (size_t col = 0; col < NN_OUTPUT(nn).cols-1; col++) {
             float   res = NN_MATRIX_AT(NN_OUTPUT(nn), 0, col);

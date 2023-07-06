@@ -23,12 +23,24 @@
 /* User May define his own print and data loading functions
  * and function args to be called when P/L keys are pressed
  * when running the gui application */
+#ifndef NN_RENDER_RESULTS_FUNC_T
+    typedef void nn_render_results_func_t(Rectangle frame, nn_t nn);
+
+    #define NN_RENDER_RESULTS_FUNC_T nn_render_results_func_t
+
+    #define NN_RENDER_RESULTS_FUNC_ARGS results_frame, nn
+
+#elif !defined NN_RENDER_RESULTS_FUNC_ARGS
+    #error "Please define NN_RENDER_RESULTS_FUNC_ARGS for passing arguments"\
+            "to the user defined nn_render_results_func_t function"
+#endif /* NN_RENDER_RESULTS_FUNC_T */
+
 #ifndef NN_PRINT_RESULTS_FUNC_T
     typedef void nn_print_func_t(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
     #define NN_PRINT_RESULTS_FUNC_T nn_print_func_t
 
-    #define NN_PRINT_RESULTS_FUNC_ARGS nn, ts_in, ts_out
+    #define NN_PRINT_RESULTS_FUNC_ARGS *nn, ts_in, ts_out
 
 #elif !defined NN_PRINT_RESULTS_FUNC_ARGS
     #error "Please define NN_PRINT_RESULTS_ARGS for passing arguments"\
@@ -37,11 +49,11 @@
 #endif /* NN_PRING_RESULTS_FUNC_T */
 
 #ifndef NN_LOAD_DATA_FUNC_T
-    typedef void nn_load_data_func_t(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+    typedef void nn_load_data_func_t(nn_matrix_t *ts_inout);
 
     #define NN_LOAD_DATA_FUNC_T nn_load_data_func_t
 
-    #define NN_LOAD_DATA_FUNC_ARGS &ts_in, &ts_out
+    #define NN_LOAD_DATA_FUNC_ARGS ts_inout
 
 #elif !defined NN_LOAD_DATA_FUNC_ARGS
     #error "Please define NN_LOAD_DATA_FUNC_ARGS for passing arguments"\
@@ -81,9 +93,15 @@
 
 #define cost_info_append(cost_info, item)\
     do {\
-        if ((cost_info)->count >= (cost_info)->capacity) {\
-            (cost_info)->capacity = (cost_info)->capacity == 0 ? COST_INFO_INIT_CAP : (cost_info)->capacity*2;\
-            (cost_info)->items = realloc((cost_info)->items, (cost_info)->capacity*sizeof(*(cost_info)->items));\
+        if ( (cost_info)->count >= (cost_info)->capacity ) {\
+            (cost_info)->capacity = (\
+                (cost_info)->capacity == 0 ?\
+                    COST_INFO_INIT_CAP : (cost_info)->capacity * 2\
+            );\
+            (cost_info)->items = realloc(\
+                (cost_info)->items,\
+                (cost_info)->capacity * sizeof(*(cost_info)->items)\
+            );\
             NN_ASSERT((cost_info)->items != NULL && "Buy more RAM lol");\
         }\
         \
@@ -113,6 +131,19 @@ typedef struct {
     size_t  capacity;
 } nn_render_cost_info;
 
+typedef struct {
+    nn_arch_t                   nn_arch;
+    float                       nn_rate;
+    float                       rand_low;
+    float                       rand_high;
+    size_t                      batch_size;
+    size_t                      batches_per_frame;
+    bool                        shuffle_rows;
+    NN_LOAD_DATA_FUNC_T         *load_data_fn;
+    NN_RENDER_RESULTS_FUNC_T    *optional_render_results_fn;
+    NN_PRINT_RESULTS_FUNC_T     *optional_print_results_fn;
+} nn_render_cfg_t;
+
 
 /* ----------------------
  * Function Declarations:
@@ -129,19 +160,43 @@ extern float get_object_vpad(float relative_object_vspace);
 extern float get_object_hpad(float relative_object_hspace);
 extern nn_r_layer_circ_info get_layer_circle_info( nn_t nn, size_t layer, Rectangle frame);
 
-
-extern void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_info, float rate, char buf[256]);
+/* Render Methods */
+extern void nn_render_model_information_text(
+    Rectangle frame, nn_render_cfg_t cfg, 
+    nn_render_cost_info cost_info, float rate
+);
 extern void nn_render_x_y_axis_internal(Rectangle frame);
 extern void nn_render_cost_graph(Rectangle frame, nn_render_cost_info cost);
 extern void nn_render_neuron_layer_circles(nn_t nn, size_t layer, Rectangle frame);
 extern void nn_render_neuron_layer_connections(nn_t nn, size_t layer, Rectangle frame);
 extern void nn_render_your_mom(nn_t nn, Rectangle nn_frame);
 extern void nn_render_network(nn_t nn, Rectangle nn_frame);
-extern void nn_render_with_default_frames(
-    nn_arch_t arch, float rand_low, float rand_high, 
-    NN_LOAD_DATA_FUNC_T load_data, 
-    NN_PRINT_RESULTS_FUNC_T optional_print_func_ptr
+extern void nn_render_draw_gui_frames(
+    nn_render_cfg_t cfg, nn_t nn, 
+    nn_matrix_t *ts_inout, nn_render_cost_info cost_info
 );
+extern void nn_render_gui(nn_render_cfg_t cfg);
+
+/* Gui Menu Methods */
+
+extern void nn_render_perform_interactive_gui_menu_actions(
+    int key, uint8_t *gui_flags, nn_render_cfg_t *cfg, nn_t *nn,
+    nn_matrix_t *ts_inout, nn_render_cost_info *cost_info
+);
+extern void nn_render_gui_menu_adjust_rate(
+    int key, uint8_t *gui_flags, nn_render_cfg_t *cfg
+);
+extern void nn_render_gui_menu_print_training_data(nn_t nn, nn_matrix_t ts_inout);
+extern void nn_render_gui_menu_print_model(nn_t nn);
+extern void nn_render_gui_menu_load_training_data(
+    nn_render_cfg_t *cfg, nn_matrix_t *ts_inout
+);
+extern void nn_render_gui_menu_save_nn_model(nn_t *nn);
+extern void nn_render_gui_menu_load_nn_model(
+    nn_t *nn, nn_render_cost_info *cost_info,
+    nn_matrix_t *ts_inout
+);
+extern void nn_render_gui_menu_print_help_menu(void);
 
 #endif /* NN_RENDER_H_ */
 
@@ -149,6 +204,32 @@ extern void nn_render_with_default_frames(
 #ifdef NN_RENDER_IMPLEMENTATION
 
 
+/* ----------
+ * Constants:
+ * ---------- */
+const int       default_window_width                        = 1200;
+const int       default_window_height                       = 800;
+const int       default_target_fps                          = 60;
+const char      default_window_title[]                      = "nn_gui_deeznuts";
+const float     frame_hpad_multiplier                       = 0.003f;
+const float     frame_vpad_multiplier                       = 0.005f;
+const float     default_obj_vpad_multiplier                 = 0.1f;
+const float     default_obj_hpad_multiplier                 = 0.1f;
+const float     default_line_thickness_multiplier           = 1.4f;
+const float     default_nn_main_frame_thickness             = 2.f;
+const float     default_nn_graph_frame_thickness            = 1.5f;
+const float     default_nn_network_frame_thickness          = 1.5f;
+const float     default_nn_graph_frame_h_multiplier         = 0.95f;
+const float     default_nn_graph_frame_w_multiplier         = 0.42f;
+const float     default_nn_network_frame_h_multiplier       = 0.5f;
+const float     default_nn_network_frame_w_multiplier       = 0.57f;
+const float     default_nn_results_frame_h_multiplier       = 0.45f;
+const float     default_nn_learning_rate                    = 0.1;
+
+
+/* -----------------
+ * Internal Defines:
+ * ----------------- */
 #define NN_RENDER_GET_COST_GRAPH_POS_Y(y, cost, min, max, vspace)\
     ( (y) + ( 1 - ((cost) - (min)) / ((max) - (min)) ) * (vspace) )
 
@@ -156,26 +237,15 @@ extern void nn_render_with_default_frames(
     ( (x) + (hspace) / (n) * (i) )
 
 
-/* ----------
- * Constants:
- * ---------- */
-const int   default_window_width                        = 1200;
-const int   default_window_height                       = 800;
-const int   default_target_fps                          = 60;
-const char  default_window_title[]                      = "nn_gui_deeznuts";
-const float frame_hpad_multiplier                       = 0.003f;
-const float frame_vpad_multiplier                       = 0.005f;
-const float default_obj_vpad_multiplier                 = 0.1f;
-const float default_obj_hpad_multiplier                 = 0.1f;
-const float default_line_thickness_multiplier           = 1.4f;
-const float default_nn_main_frame_thickness             = 2.f;
-const float default_nn_graph_frame_thickness            = 1.5f;
-const float default_nn_network_frame_thickness          = 1.5f;
-const float default_nn_graph_frame_h_multiplier         = 0.95f;
-const float default_nn_graph_frame_w_multiplier         = 0.42f;
-const float default_nn_network_frame_h_multiplier       = 0.5f;
-const float default_nn_network_frame_w_multiplier       = 0.57f;
-const float default_nn_learning_rate                    = 0.1;
+/* ------------------
+ * Internal Typedefs:
+ * ------------------ */
+typedef enum {
+    NN_RENDER_RESTART_FLAG              = (1 << 0),
+    NN_RENDER_PAUSE_FLAG                = (1 << 1),
+    NN_RENDER_AUTO_PAUSE_TRIGGERED_FLAG = (1 << 2),
+} nn_render_gui_flags_internal_t;
+
 
 /* ----------------------
  * Static Function Decls:
@@ -184,44 +254,45 @@ static int nn_render_find_max_nof_neuron_circles(nn_t nn);
 static float nn_render_calc_neuron_circle_radius(nn_t nn, Rectangle frame);
 static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max, float *min);
 static void nn_render_update_frames_internal_(
-    Rectangle *main_frame, Rectangle *network_frame, Rectangle *graph_frame
+    Rectangle *main_frame, Rectangle *network_frame, 
+    Rectangle *graph_frame, Rectangle *results_frame
 );
 
 
 /* -------------------------------
  * Library Method Implementations:
  * ------------------------------- */
-void nn_render_with_default_frames(
-    nn_arch_t arch, float rand_low, float rand_high, 
-    NN_LOAD_DATA_FUNC_T load_data, 
-    NN_PRINT_RESULTS_FUNC_T optional_print_func_ptr
-)
+void nn_render_gui(nn_render_cfg_t cfg)
 {
-    char buf[256];
+    NN_ASSERT(cfg.load_data_fn);
 
-    int         i                   = 0;
-    int         key                 = 0;
-    int         stop_flag           = 0;
-    int         auto_stop_triggered = 0;
-    int         restart_flag        = 0;
-    float       nn_rate             = default_nn_learning_rate;
-    nn_t        nn, gradient;
-    nn_matrix_t ts_in, ts_out;
-    Rectangle   main_frame, network_frame, graph_frame;
-
-    nn_render_cost_info cost_info = {
-        .items = NN_MALLOC(sizeof(float) * COST_INFO_INIT_CAP),
-        .capacity = COST_INFO_INIT_CAP,
-        .count = 0,
-    };
+    int                 key_pressed = 0;
+    uint8_t             gui_flags   = ( 0 | NN_RENDER_PAUSE_FLAG );
+    nn_render_cost_info cost_info   = {.count = 0, .capacity = 0, .items = 0};
+    nn_t                nn          = {.nof_layers = 0, .biases = 0, .weights = 0, .activations = 0}; 
+    nn_t                gradient    = {.nof_layers = 0, .biases = 0, .weights = 0, .activations = 0};
+    nn_matrix_t         *ts_inout   = &(nn_matrix_t){.cols = 0, .rows = 0, .stride = 0, .data = 0};
+    nn_batch_t          batch       = {.begin = 0, .cost = 0, .finished = false};
+    nn_matrix_t         ts_in, ts_out;
     
-    ts_in.data  = NULL;
-    ts_out.data = NULL;
-    load_data(NN_LOAD_DATA_FUNC_ARGS);
-    nn          = nn_alloc(arch.arch, arch.arch_len);
-    gradient    = nn_alloc(arch.arch, arch.arch_len);
-    nn_rand(nn, rand_low, rand_high);
-    NN_ASSERT(cost_info.items);
+    nn              = nn_alloc(cfg.nn_arch.arch, cfg.nn_arch.arch_len);
+    gradient        = nn_alloc(cfg.nn_arch.arch, cfg.nn_arch.arch_len);
+    nn_rand(nn, cfg.rand_low, cfg.rand_high);
+
+    cfg.load_data_fn(NN_LOAD_DATA_FUNC_ARGS);
+
+    if (cfg.shuffle_rows)
+        nn_matrix_shuffle_rows(*ts_inout);
+
+    ts_in.rows      = ts_inout->rows;
+    ts_out.rows     = ts_inout->rows;
+    ts_in.cols      = NN_INPUT(nn).cols;
+    ts_out.cols     = NN_OUTPUT(nn).cols;
+    ts_in.stride    = ts_inout->cols;
+    ts_out.stride   = ts_inout->cols;
+    ts_in.data      = &NN_MATRIX_AT(*ts_inout, 0, 0);
+    ts_out.data     = &NN_MATRIX_AT(*ts_inout, 0, NN_INPUT(nn).cols);
+
     cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -229,164 +300,342 @@ void nn_render_with_default_frames(
     SetTargetFPS(default_target_fps);
 
 
-    do {
-        if (!(i++ % 0x40) && IsWindowReady()) {
-            BeginDrawing();
-            nn_render_update_frames_internal_(&main_frame, &network_frame, &graph_frame);
-            DrawRectangleLinesEx(network_frame, default_nn_network_frame_thickness, GRAY);
-            DrawRectangleLinesEx(graph_frame, default_nn_graph_frame_thickness, GRAY);
-            ClearBackground(BLACK);
-            nn_render_network(nn, network_frame);
-            nn_render_cost_graph(graph_frame, cost_info);
-            nn_render_model_information_text(main_frame, cost_info, nn_rate, buf);
-            EndDrawing();
+    while (!WindowShouldClose()) {
+        nn_render_draw_gui_frames(cfg, nn, ts_inout, cost_info);
+
+        while ( (key_pressed = GetKeyPressed()) ) {
+            nn_render_perform_interactive_gui_menu_actions(
+                key_pressed, &gui_flags, &cfg, 
+                &nn, ts_inout, &cost_info
+            );
+            key_pressed = 0;
         }
 
-        while ( (key = GetKeyPressed()) ) {
-            switch (key) {
-                case KEY_S:
-                    stop_flag = !stop_flag;
-                    break;
-
-                case KEY_R:
-                    restart_flag = 1;
-                    break;
-
-                case KEY_DOWN:
-                    if (IsKeyDown(KEY_LEFT_SHIFT))
-                        nn_rate -= 1e-3;
-                    else if (IsKeyDown(KEY_LEFT_CONTROL))
-                        nn_rate -= 1e-2;
-                    else
-                        nn_rate -= 1e-1;
-                    break;
-
-                case KEY_UP:
-                    if (IsKeyDown(KEY_LEFT_SHIFT))
-                        nn_rate += 1e-3;
-                    else if (IsKeyDown(KEY_LEFT_CONTROL))
-                        nn_rate += 1e-2;
-                    else
-                        nn_rate += 1e-1;
-                    break;
-
-                case KEY_KP_0:
-                    nn_rate = 0;
-                    break;
-
-                case KEY_KP_1:
-                    nn_rate = 1;
-                    break;
-
-                case KEY_P:
-                    if (optional_print_func_ptr)
-                        optional_print_func_ptr(NN_PRINT_RESULTS_FUNC_ARGS);
-                    break;
-
-                case KEY_D:
-                    printf("\n\n----------------------------------\n\n");
-                    printf("ts_in.rows: %zu\n", ts_in.rows);
-                    printf("ts_in.cols: %zu\n", ts_in.cols);
-                    NN_MATRIX_PRINT(ts_in);
-                    printf("ts_out.rows: %zu\n", ts_out.rows);
-                    printf("ts_out.cols: %zu\n", ts_out.cols);
-                    NN_MATRIX_PRINT(ts_out);
-                    printf("\n\n----------------------------------\n\n");
-                    break;
-
-                case KEY_M:
-                    printf("\n\n----------------------------------\n\n");
-                    NN_PRINT(nn);
-                    printf("\n\n----------------------------------\n\n");
-                    break;
-
-                case KEY_L:
-                    nn_matrix_free(ts_out);
-                    nn_matrix_free(ts_in);
-                    ts_out.data = NULL;
-                    ts_in.data = NULL;
-                    load_data(NN_LOAD_DATA_FUNC_ARGS);
-                    NN_ASSERT(ts_in.data && ts_out.data);
-                    stop_flag = 1;
-                    i = 0;
-                    break;
-
-                case KEY_F1: {
-                    FILE *mfp = NULL;
-                    char buf[FILENAME_MAX+1] = {0};
-                    fprintf(stdout, "Please provide a path to save the model to: ");
-
-                    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
-                        break;
-
-                    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "wb")) )
-                        break;
-
-                    nn_save_model(mfp, nn);
-
-                    fclose(mfp);
-                    break;
-                }
-
-                case KEY_F2: {
-                    FILE *mfp = NULL;
-                    char buf[FILENAME_MAX+1] = {0};
-                    fprintf(stdout, "Please provide a path to load the model from: ");
-
-                    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
-                        break;
-
-                    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "rb")) )
-                        break;
-
-                    nn_free(nn);
-                    nn = nn_load_model(mfp);
-                    fclose(mfp);
-                    cost_info.count = 0;
-                    cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
-                    i = 0;
-                    stop_flag = 1;
-                    continue;
-                }
-            }
-
-            key = 0;
-        }
-
-        if (restart_flag) {
+        if (gui_flags & NN_RENDER_RESTART_FLAG) {
+            gui_flags       ^= NN_RENDER_RESTART_FLAG;
             cost_info.count = 0;
-            nn_rand(nn, rand_low, rand_high);
+            nn_rand(nn, cfg.rand_low, cfg.rand_high);
             cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
-            restart_flag = 0;
-            i = 0;
             continue;
         }
 
-        if (stop_flag)
+        if (gui_flags & NN_RENDER_PAUSE_FLAG)
             continue;
 
-        nn_back_propagation(nn, gradient, ts_in, ts_out);
-        nn_learn(nn, gradient, nn_rate);
-        cost_info_append(&cost_info, nn_cost(nn, ts_in, ts_out));
+        for (size_t i = 0; i < cfg.batches_per_frame; i++) {
+            nn_mini_batch_process(&batch, cfg.batch_size, nn, gradient, *ts_inout, cfg.nn_rate);
 
-        if (!auto_stop_triggered && cost_info.items[cost_info.count-1] <= 5e-4) {
-            stop_flag = 1;
-            auto_stop_triggered = 1;
+            if (batch.finished) {
+                if (cfg.shuffle_rows)
+                    nn_matrix_shuffle_rows(*ts_inout);
+
+                cost_info_append(&cost_info, batch.cost);
+            }
         }
 
+        if (gui_flags & NN_RENDER_AUTO_PAUSE_TRIGGERED_FLAG)
+            continue;
 
-    } while (!WindowShouldClose());
+        if (cost_info.items[cost_info.count-1] <= 5e-4) {
+            gui_flags |= NN_RENDER_PAUSE_FLAG;
+            gui_flags |= NN_RENDER_AUTO_PAUSE_TRIGGERED_FLAG;
+        }
+    }
+
     CloseWindow();
+    nn_free(nn);
+    nn_free(gradient);
+    nn_matrix_free(*ts_inout);
     free(cost_info.items);
 }
 
-void nn_render_model_information_text(Rectangle frame, nn_render_cost_info cost_info, float rate, char buf[256])
+void nn_render_draw_gui_frames(
+    nn_render_cfg_t cfg, nn_t nn, 
+    nn_matrix_t *ts_inout, nn_render_cost_info cost_info
+)
 {
+    Rectangle main_frame, network_frame, graph_frame, results_frame;
+
+    if (!IsWindowReady())
+        return;
+
+    BeginDrawing();
+
+    ClearBackground(BLACK);
+    nn_render_update_frames_internal_(&main_frame, &network_frame, &graph_frame, &results_frame);
+    DrawRectangleLinesEx(network_frame, default_nn_network_frame_thickness, GRAY);
+    DrawRectangleLinesEx(graph_frame, default_nn_graph_frame_thickness, GRAY);
+    DrawRectangleLinesEx(results_frame, default_nn_graph_frame_thickness, GRAY);
+    nn_render_network(nn, network_frame);
+    nn_render_cost_graph(graph_frame, cost_info);
+    nn_render_model_information_text(main_frame, cfg, cost_info, cfg.nn_rate);
+
+    if (cfg.optional_render_results_fn != NULL) {
+        nn_matrix_t ts_in, ts_out;
+
+        ts_in.rows      = ts_inout->rows;
+        ts_out.rows     = ts_inout->rows;
+        ts_in.cols      = NN_INPUT(nn).cols;
+        ts_out.cols     = NN_OUTPUT(nn).cols;
+        ts_in.stride    = ts_inout->cols;
+        ts_out.stride   = ts_inout->cols;
+        ts_in.data      = &NN_MATRIX_AT(*ts_inout, 0, 0);
+        ts_out.data     = &NN_MATRIX_AT(*ts_inout, 0, NN_INPUT(nn).cols);
+        cfg.optional_render_results_fn(NN_RENDER_RESULTS_FUNC_ARGS);
+    }
+
+    EndDrawing();
+}
+
+void nn_render_perform_interactive_gui_menu_actions(
+    int key, uint8_t *gui_flags, nn_render_cfg_t *cfg, nn_t *nn,
+    nn_matrix_t *ts_inout, nn_render_cost_info *cost_info
+)
+{
+
+    switch (key) {
+        case KEY_SPACE:
+            (*gui_flags) ^= NN_RENDER_PAUSE_FLAG;
+            break;
+
+        case KEY_R:
+            (*gui_flags) |= NN_RENDER_RESTART_FLAG;
+            break;
+
+        case KEY_P:
+            if (cfg->optional_print_results_fn) {
+                nn_matrix_t ts_in, ts_out;
+
+                ts_in.rows      = ts_inout->rows;
+                ts_out.rows     = ts_inout->rows;
+                ts_in.cols      = NN_INPUT(*nn).cols;
+                ts_out.cols     = NN_OUTPUT(*nn).cols;
+                ts_in.stride    = ts_inout->cols;
+                ts_out.stride   = ts_inout->cols;
+                ts_in.data      = &NN_MATRIX_AT(*ts_inout, 0, 0);
+                ts_out.data     = &NN_MATRIX_AT(*ts_inout, 0, NN_INPUT(*nn).cols);
+                cfg->optional_print_results_fn(NN_PRINT_RESULTS_FUNC_ARGS);
+            }
+            break;
+
+        case KEY_D:
+            nn_render_gui_menu_print_training_data(*nn, *ts_inout);
+            break;
+
+        case KEY_M:
+            nn_render_gui_menu_print_model(*nn);
+            break;
+
+        case KEY_L:
+            (*gui_flags) |= NN_RENDER_PAUSE_FLAG;
+            nn_render_gui_menu_load_training_data(cfg, ts_inout);
+            break;
+
+        case KEY_H:
+            nn_render_gui_menu_print_help_menu();
+            break;
+
+        case KEY_F1: {
+            nn_render_gui_menu_save_nn_model(nn);
+            break;
+        }
+
+        case KEY_F2:
+            (*gui_flags) |= NN_RENDER_PAUSE_FLAG;
+            nn_render_gui_menu_load_nn_model(nn, cost_info, ts_inout);
+            break;
+
+        case KEY_DOWN: case KEY_UP:
+        case KEY_KP_0: case KEY_KP_1:
+        case KEY_KP_2: case KEY_KP_3:
+        case KEY_KP_4: case KEY_KP_5:
+        case KEY_KP_6: case KEY_KP_7:
+        case KEY_KP_8: case KEY_KP_9:
+            nn_render_gui_menu_adjust_rate(key, gui_flags, cfg);
+            break;
+
+    }
+}
+
+void nn_render_gui_menu_adjust_rate(
+    int key, uint8_t *gui_flags,
+    nn_render_cfg_t *cfg
+)
+{
+    switch (key) {
+        case KEY_DOWN:
+            if (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))
+                for (size_t i = 0; i < 69420; i++)
+                    fprintf(stdout, "69420\n");
+
+            else if (IsKeyDown(KEY_LEFT_SHIFT))
+                cfg->nn_rate -= 1e-3;
+
+            else if (IsKeyDown(KEY_LEFT_CONTROL))
+                cfg->nn_rate -= 1e-2;
+
+            else
+                cfg->nn_rate -= 1e-1;
+
+            break;
+
+        case KEY_UP:
+            if (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))
+                for (size_t i = 0; i < 69420; i++)
+                    fprintf(stdout, "69420\n");
+
+            else if (IsKeyDown(KEY_LEFT_SHIFT))
+                cfg->nn_rate += 1e-3;
+
+            else if (IsKeyDown(KEY_LEFT_CONTROL))
+                cfg->nn_rate += 1e-2;
+
+            else
+                cfg->nn_rate += 1e-1;
+
+            break;
+
+        case KEY_KP_0: case KEY_KP_1:
+        case KEY_KP_2: case KEY_KP_3:
+        case KEY_KP_4: case KEY_KP_5:
+        case KEY_KP_6: case KEY_KP_7:
+        case KEY_KP_8: case KEY_KP_9:
+            cfg->nn_rate = (key - KEY_KP_0);
+            break;
+    }
+}
+
+void nn_render_gui_menu_print_training_data(nn_t nn, nn_matrix_t ts_inout)
+{
+    nn_matrix_t ts_in, ts_out;
+
+    ts_in.rows      = ts_inout.rows;
+    ts_out.rows     = ts_inout.rows;
+    ts_in.cols      = NN_INPUT(nn).cols;
+    ts_out.cols     = NN_OUTPUT(nn).cols;
+    ts_in.stride    = ts_inout.cols;
+    ts_out.stride   = ts_inout.cols;
+    ts_in.data      = &NN_MATRIX_AT(ts_inout, 0, 0);
+    ts_out.data     = &NN_MATRIX_AT(ts_inout, 0, NN_INPUT(nn).cols);
+
+    fprintf(stdout, "\n\n----------------------------------\n\n");
+    NN_MATRIX_PRINT(ts_in);
+    NN_MATRIX_PRINT(ts_out);
+    fprintf(stdout, "ts_in.rows: %zu\n", ts_in.rows);
+    fprintf(stdout, "ts_in.cols: %zu\n", ts_in.cols);
+    fprintf(stdout, "ts_out.rows: %zu\n", ts_out.rows);
+    fprintf(stdout, "ts_out.cols: %zu\n", ts_out.cols);
+    fprintf(stdout, "\n\n----------------------------------\n\n");
+}
+
+void nn_render_gui_menu_print_model(nn_t nn)
+{
+    fprintf(stdout, "\n\n----------------------------------\n\n");
+    NN_PRINT(nn);
+    fprintf(stdout, "\n\n----------------------------------\n\n");
+
+}
+
+void nn_render_gui_menu_load_training_data(
+    nn_render_cfg_t *cfg, nn_matrix_t *ts_inout
+)
+{
+    nn_matrix_free(*ts_inout);
+    ts_inout->data    = NULL;
+    cfg->load_data_fn(NN_LOAD_DATA_FUNC_ARGS);
+    NN_ASSERT(ts_inout->data);
+}
+
+void nn_render_gui_menu_save_nn_model(nn_t *nn)
+{
+    FILE *mfp = NULL;
+    char buf[FILENAME_MAX+1] = {0};
+
+    fprintf(stdout, "Please provide a path to save the model to: ");
+
+    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
+        return;
+
+    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "wb")) )
+        return;
+
+    nn_save_model(mfp, *nn);
+    fclose(mfp);
+
+    fprintf(stdout, "Model was successfully saved to: %s.nn_model\n", buf);
+}
+
+void nn_render_gui_menu_load_nn_model(
+    nn_t *nn, nn_render_cost_info *cost_info,
+    nn_matrix_t *ts_inout
+)
+{
+    FILE *mfp                   = NULL;
+    char buf[FILENAME_MAX+1]    = {0};
+    nn_matrix_t ts_in, ts_out;
+
+    ts_in.rows      = ts_inout->rows;
+    ts_out.rows     = ts_inout->rows;
+    ts_in.cols      = NN_INPUT(*nn).cols;
+    ts_out.cols     = NN_OUTPUT(*nn).cols;
+    ts_in.stride    = ts_inout->cols;
+    ts_out.stride   = ts_inout->cols;
+    ts_in.data      = &NN_MATRIX_AT(*ts_inout, 0, 0);
+    ts_out.data     = &NN_MATRIX_AT(*ts_inout, 0, NN_INPUT(*nn).cols);
+
+    fprintf(stdout, "Please provide a path to load the model from: ");
+
+    if (nn_io_get_line(buf, FILENAME_MAX, stdin) <= 0)
+        return;
+
+    if ( !(mfp=nn_io_fopen(buf, ".nn_model", "rb")) )
+        return;
+
+    nn_free(*nn);
+
+    (*nn)               = nn_load_model(mfp);
+    cost_info->count    = 0;
+    cost_info_append(cost_info, nn_cost(*nn, ts_in, ts_out));
+
+    fclose(mfp);
+
+}
+
+void nn_render_gui_menu_print_help_menu(void)
+{
+    fprintf(
+        stdout, 
+        "\n\n--------------------------------------------------------------------------------------\n"\
+        "Help Menu:\n"\
+        "--------------------------------------------------------------------------------------\n"\
+        "Spacebar       : Pause/Continue\n"\
+        "R              : Restart\n"\
+        "P              : Call optional user defined print results function (if provided)\n"\
+        "D              : Print training data matrices\n"\
+        "M              : Print nn model\n"\
+        "L              : Call user defined function to load training data\n"\
+        "H              : Print this menu\n"\
+        "F1             : Save current nn model to binary file\n"\
+        "F2             : Load a model from an existing binary file\n"\
+        "Down/Up        : Decrement/Increment learning rate by 0.1f\n"\
+        "Ctrl+Down/Up   : Decrement/Increment learning rate by 0.01f\n"\
+        "Shift+Down/Up  : Decrement/Increment learning rate by 0.001f\n"\
+        "Alt+Down/Up    : Prints \"69420\" 69420 times (Recommended)\n"\
+        "\n--------------------------------------------------------------------------------------\n\n"
+    );
+}
+
+void nn_render_model_information_text(Rectangle frame, nn_render_cfg_t cfg, nn_render_cost_info cost_info, float rate)
+{
+    char buf[256];
+
     if (!cost_info.count)
         return;
 
 
-    snprintf(buf, 255, "Rate: %2.8f, Iteration: %zu, Cost: %.16f", rate, cost_info.count, cost_info.items[cost_info.count-1]);
+    snprintf(
+        buf, 255, "Rate: %2.8f, Iteration: %zu, Cost: %.12f", 
+        rate, cost_info.count - 1, cost_info.items[cost_info.count-1]);
     DrawText(buf, get_frame_hpad(frame)*3, get_frame_vpad(frame)*3, 20, RAYWHITE);
 }
 
@@ -642,7 +891,8 @@ static void nn_render_find_max_min_costs(nn_render_cost_info c_info, float *max,
 }
 
 static void nn_render_update_frames_internal_(
-    Rectangle *main_frame, Rectangle *network_frame, Rectangle *graph_frame
+    Rectangle *main_frame, Rectangle *network_frame, 
+    Rectangle *graph_frame, Rectangle *results_frame
 )
 {
     *main_frame = (Rectangle) {
@@ -675,6 +925,12 @@ static void nn_render_update_frames_internal_(
         ),
     };
 
+    *results_frame = (Rectangle) {
+        .width  = network_frame->width,
+        .height = main_frame->height * default_nn_results_frame_h_multiplier,
+        .x      = network_frame->x,
+        .y      = graph_frame->y,
+    };
 }
 
 static float nn_render_calc_neuron_circle_radius(nn_t nn, Rectangle frame)

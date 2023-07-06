@@ -59,7 +59,7 @@ const size_t    max_priv_key_path_len   = (
  * -------------------- */
 uint8_t validate_cmdline_args(int argc, const char **argv);
 static void report_cmdline_arg_err(cmdline_args_err_flags flag, char *flag_name);
-void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out);
+void load_training_data(nn_matrix_t *ts_inout);
 void print_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out);
 
 
@@ -69,8 +69,19 @@ int main(int argc, char **argv)
 
     size_t  arch[]              = {nn_input_size, 23, 23, 23, 23, 23, 23, nn_output_size};
     size_t  arch_len            = NN_SIZEOF_ARR(arch);
+    nn_render_cfg_t render_cfg  = {
+        .nn_arch                    = {.arch = arch, .arch_len = arch_len},
+        .nn_rate                    = 1e-1,
+        .rand_low                   = -1.3,
+        .rand_high                  = 0,
+        .batch_size                 = 20,
+        .batches_per_frame          = 0x80,
+        .load_data_fn               = &load_training_data,
+        .optional_render_results_fn = NULL,
+        .optional_print_results_fn  = &print_results,
+    };
 
-    nn_render_with_default_frames((nn_arch_t){arch_len, arch}, -1.3f, 0, &load_training_data, &print_results);
+    nn_render_gui(render_cfg);
     
     return EXIT_SUCCESS;
 }
@@ -117,7 +128,7 @@ void print_results(nn_t nn, nn_matrix_t ts_in, nn_matrix_t ts_out)
 }
 
 
-void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
+void load_training_data(nn_matrix_t *ts_inout)
 {
 
     char    filepath[FILENAME_MAX + 1]      = {0};
@@ -183,19 +194,15 @@ void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
         }
     }
 
-    if (!err_flag && ts_in->data == NULL) {
-        *ts_in = nn_matrix_alloc(1, nn_input_size);
+    if (!err_flag && ts_inout->data == NULL) {
+        *ts_inout = nn_matrix_alloc(1, nn_input_size + nn_output_size);
     }
 
-    if (!err_flag && ts_out->data == NULL) {
-        *ts_out = nn_matrix_alloc(1, nn_output_size);
-    }
+    for (size_t j = 0; !err_flag && j < nn_input_size; j++)
+        NN_MATRIX_AT(*ts_inout, 0, j) = (j < encrypted_text_len ? ( (encrypted_text_buf[j]) / (float)(unsigned)UINT8_MAX): 0);
 
-    for (size_t j = 0; !err_flag && j < ts_in->cols; j++)
-        NN_MATRIX_AT(*ts_in, 0, j) = (j < encrypted_text_len ? ( (encrypted_text_buf[j]) / (float)(unsigned)UINT8_MAX): 0);
-
-    for (size_t j = 0; !err_flag && j < ts_out->cols; j++)
-        NN_MATRIX_AT(*ts_out, 0, j) = ( j < decrypted_text_len ? ((decrypted_text_buf[j]) / (float)CHAR_MAX): 0);
+    for (size_t j = 0; !err_flag && j < nn_output_size; j++)
+        NN_MATRIX_AT(*ts_inout, 0, nn_input_size+j) = ( j < decrypted_text_len ? ((decrypted_text_buf[j]) / (float)CHAR_MAX): 0);
 
     fclose(input_data_file);
     fclose(output_data_file);
@@ -204,13 +211,9 @@ void load_training_data(nn_matrix_t *ts_in, nn_matrix_t *ts_out)
 
     if (err_flag) {
         fprintf(stderr, "err_flag was raised!\n");
-        if (ts_in->data){
-            nn_matrix_free(*ts_in);
-            ts_out->data = NULL;
-        }
-        if (ts_out->data) {
-            nn_matrix_free(*ts_out);
-            ts_out->data = NULL;
+        if (ts_inout->data){
+            nn_matrix_free(*ts_inout);
+            ts_inout->data = NULL;
         }
         if (input_data_file)
             fclose(input_data_file);

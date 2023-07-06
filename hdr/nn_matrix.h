@@ -65,12 +65,13 @@ extern void nn_matrix_sigmoid(nn_matrix_t m);
 extern void nn_matrix_actf(nn_matrix_t m, nn_act_func_enum act_func);
 
 /* Utility Methods */
+extern void nn_matrix_shuffle_rows(nn_matrix_t m);
 extern void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src);
-extern nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row);
 extern void nn_matrix_print(nn_matrix_t m, char *name, int indent);
 extern void nn_matrix_fprint(FILE *stream, nn_matrix_t m, const char *name, int indent);
 extern void nn_matrix_save(FILE *fp,nn_matrix_t m);
 extern nn_matrix_t nn_matrix_load(FILE *fp);
+extern nn_matrix_t nn_matrix_row(nn_matrix_t m, size_t row);
 
 
 #endif /*NN_MATRIX_H_*/
@@ -195,6 +196,22 @@ void nn_matrix_actf(nn_matrix_t m, nn_act_func_enum act_func)
 /* ----------------
  * Utility Methods:
  * ---------------- */
+void nn_matrix_shuffle_rows(nn_matrix_t m)
+{
+    for (size_t i = 0; i < m.rows; i++) {
+        size_t j = rand() % (m.rows - i);
+
+        if (i == j)
+            continue;
+
+        for (size_t k = 0; k < m.cols; k++) {
+            float tmp = NN_MATRIX_AT(m, i, k);
+            NN_MATRIX_AT(m, i, k) = NN_MATRIX_AT(m, j, k);
+            NN_MATRIX_AT(m, j, k) = tmp;
+        }
+    }
+}
+
 void nn_matrix_copy(nn_matrix_t dst, nn_matrix_t src)
 {
     NN_ASSERT(dst.rows == src.rows);
