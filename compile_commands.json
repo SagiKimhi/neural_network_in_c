@@ -1,0 +1,95 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-ansi",
+      "-pedantic",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I./src",
+      "-o",
+      "nn_xor",
+      "examples/nn_xor.c"
+    ],
+    "directory": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c",
+    "file": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/examples/nn_xor.c",
+    "output": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/nn_xor"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-ansi",
+      "-pedantic",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I./src",
+      "-o",
+      "nn_adder",
+      "examples/nn_adder.c"
+    ],
+    "directory": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c",
+    "file": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/examples/nn_adder.c",
+    "output": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/nn_adder"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-ansi",
+      "-pedantic",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I./src",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "nn_adder_gui",
+      "examples/nn_adder_gui.c"
+    ],
+    "directory": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c",
+    "file": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/examples/nn_adder_gui.c",
+    "output": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/nn_adder_gui"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-ansi",
+      "-pedantic",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I./src",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "nn_img_upscale_gui",
+      "examples/nn_upscale_png.c"
+    ],
+    "directory": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c",
+    "file": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/examples/nn_upscale_png.c",
+    "output": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/nn_img_upscale_gui"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-ansi",
+      "-pedantic",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I./src",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "nn_rsa_decrypt_gui",
+      "examples/nn_rsa_decrypt_gui.c"
+    ],
+    "directory": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c",
+    "file": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/examples/nn_rsa_decrypt_gui.c",
+    "output": "/Users/sagi.kimhi/.project/git/SagiKimhi/neural_network_in_c/nn_rsa_decrypt_gui"
+  }
+]
