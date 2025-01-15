@@ -1,0 +1,30 @@
+# Exclude All
+
+*
+
+# Unexclude common dirs
+
+!*/
+!.github/**/
+!assets/**/*
+
+# Unexclude common files
+
+!LICENSE
+!README.md
+!.gitignore
+!.clang-format
+!compile_commands.json
+!.github/workflows/**/*.yml
+
+# Unexclude project files
+
+!src/*.[ch]
+!tests/*.[ch]
+!examples/*.[ch]
+!Makefile
+!png2mp4.sh
+
+!outputs/*
+!training_data/*
+
