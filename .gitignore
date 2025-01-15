@@ -19,12 +19,12 @@
 
 # Unexclude project files
 
+!Makefile
 !src/*.[ch]
 !tests/*.[ch]
 !examples/*.[ch]
-!Makefile
-!png2mp4.sh
 
+!scripts/*
 !outputs/*
 !training_data/*
 
