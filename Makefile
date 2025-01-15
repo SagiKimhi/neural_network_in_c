@@ -34,12 +34,13 @@ else
 endif
 
 # Text colors
-_SET_RED := @echo -n "\033[31m" # Red text for "printf"
-_SET_GREEN := @echo -n "\033[32m" # Green text for "printf"
-_SET_WHITE := @echo -n "\033[0m" # White text for "printf"
+_SET_RED := @echo "\033[31m" # Red text for "printf"
+_SET_WHITE := @echo "\033[0m" # White text for "printf"
+_SET_GREEN := @echo "\033[32m" # Green text for "printf"
 
 # Makefile rules
-.PHONY: all\
+.PHONY:\
+	all\
     clean\
     tests\
     examples\
@@ -49,9 +50,12 @@ _SET_WHITE := @echo -n "\033[0m" # White text for "printf"
     rsa_decrypt_gui\
     img_upscale_gui
 
-all: examples
+all:\
+	examples
 
-tests: nn_tests nn_matrix_tests
+tests:\
+	nn_tests\
+	nn_matrix_tests
 
 examples:\
 	xor\
