@@ -2,20 +2,6 @@
 
 A small, simple neural networks training framework written in C.
 
-## Features
-
-Features a GUI for training your model, real-time output visualization, 
-export/import your model, and more...
-
-Training:
-<img src="assets/training.gif" height="600" width="850">
-
-Real-Time visualizition of output in GUI:
-<img src="assets/transitions.gif" height="600" width="850">
-
-Export outputs as video:
-<img src="assets/upscale.gif" height="600" width="850">
-
 ## About
 
 NNC is a small and simple neural networks framework written in C.
@@ -36,7 +22,24 @@ somehow useful to you then I encourage you to first check out [tsoding/nn.h](htt
 as his implementation is most probably multiple times better then mine and is
 accompanied with a respectful amount of additional educational contents.
 
-## Dependencies
+---
+
+## Training with GUI
+
+### Model training with GUI
+<img src="assets/training.gif" height="600" width="850">
+
+### Real-time training output visualization 
+<img src="assets/transitions.gif" height="600" width="850">
+
+### Exporting output as image, video, or user defined method
+<img src="assets/upscale.gif" height="600" width="850">
+
+---
+
+## Building and Running
+
+### Dependencies
 
 To compile and run the GUI examples, raylib must be installed and linked with
 the binary.
@@ -45,9 +48,7 @@ Installation of raylib is fairly simple, and might even be provided by your
 package manager (i.e. apt, brew, etc.), for additional information and
 detailed build/installation instructions, visit [raysan5/raylib.git](https://github.com/raysan5/raylib.git)
 
-## Build
-
-### Clone a local copy of the repo
+### Cloning a local copy
 
 clone repo
 ```sh
@@ -58,6 +59,8 @@ cd into local repo clone
 ```sh
 cd neural_networks_in_c
 ```
+
+### Building, running, and cleaning
 
 Build all examples
 ```sh
@@ -84,6 +87,10 @@ images from the MNIST dataset for the purpose if this example:
   Please enter the path to ... : ./training_data
 ```
 
+---
+
+### Runtime CLI help menu (H Key)
+
 Upon hitting Enter the GUI will open up, the following key mappings are
 available to start, pause, restart, and control the live training process:
 
@@ -92,6 +99,8 @@ available to start, pause, restart, and control the live training process:
 - `Spacebar` - Start/Stop the training process.
 - `Arrow Up` - Increse learning rate by 0.1
 - `Arrow Down` - Decrease learning rate by 0.1
+- `Shift + Arrow Up` - Increse learning rate by 0.001
+- `Shift + Arrow Down` - Decrease learning rate by 0.001
 
 Additional keybinds and actions are available in the example's help menu (hit
 the `h` key and inspect the options printed to console), these include
@@ -99,9 +108,11 @@ operations for saving/loading the model, exporting upscaled image outputs from
 model to png, or exporting a video of the outputs and transitions as video via
 ffmpeg (must be installed and available under $PATH environment variable).
 
-Example:
+### Example/Reference:
+
 [build example GIF](assets/building.gif)
 
+---
 
 ## Contributions
 
