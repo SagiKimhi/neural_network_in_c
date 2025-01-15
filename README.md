@@ -1,6 +1,20 @@
 # NNC
 
-A small, simple neural networks framework written in C
+A small, simple neural networks training framework written in C.
+
+## Features
+
+Features a GUI for training your model, real-time output visualization, 
+export/import your model, and more...
+
+Training:
+<img src="assets/training.gif" height="600" width="850">
+
+Real-Time visualizition of output in GUI:
+<img src="assets/transitions.gif" height="600" width="850">
+
+Export outputs as video:
+<img src="assets/upscale.gif" height="600" width="850">
 
 ## About
 
@@ -31,21 +45,31 @@ Installation of raylib is fairly simple, and might even be provided by your
 package manager (i.e. apt, brew, etc.), for additional information and
 detailed build/installation instructions, visit [raysan5/raylib.git](https://github.com/raysan5/raylib.git)
 
-## Usage
+## Build
 
-clone the repo
+### Clone a local copy of the repo
+
+clone repo
 ```sh
 git clone git@github.com:SagiKimhi/neural_networks_in_c.git
 ```
 
-cd into repo
+cd into local repo clone
 ```sh
 cd neural_networks_in_c
 ```
 
-compile and run one of the examples
+Build all examples
 ```sh
-make && ./nn_img_upscale_gui
+make # builds all examples, can be cleaned later with make clean
+```
+
+Alternatively, clean previous build by running `make clean`, and start a new 
+build of a single example instead of building everything.
+```sh
+make clean \ # Clean previous build
+&& make img_upscale_gui \ # Build image upscale GUI example
+&& ./nn_img_upscale_gui # Run the image upscale GUI example
 ```
 
 after running the example, you should be prompted to provide a path to a
@@ -74,6 +98,10 @@ the `h` key and inspect the options printed to console), these include
 operations for saving/loading the model, exporting upscaled image outputs from
 model to png, or exporting a video of the outputs and transitions as video via
 ffmpeg (must be installed and available under $PATH environment variable).
+
+Example:
+[build example GIF](assets/building.gif)
+
 
 ## Contributions
 

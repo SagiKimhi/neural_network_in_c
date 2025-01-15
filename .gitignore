@@ -1,12 +1,24 @@
 # Exclude All
 
-*
+**/*
 
 # Unexclude common dirs
 
 !*/
 !.github/**/
 !assets/**/*
+
+# Unexclude project files
+
+!Makefile
+!src/*.[ch]
+!tests/*.[ch]
+!examples/*.[ch]
+!assets/*.gif
+!scripts/*.sh
+!outputs/*.mp4
+!training_data/*.png
+!.github/workflows/**/*.yml
 
 # Unexclude common files
 
@@ -15,16 +27,4 @@
 !.gitignore
 !.clang-format
 !compile_commands.json
-!.github/workflows/**/*.yml
-
-# Unexclude project files
-
-!Makefile
-!src/*.[ch]
-!tests/*.[ch]
-!examples/*.[ch]
-
-!scripts/*
-!outputs/*
-!training_data/*
 
